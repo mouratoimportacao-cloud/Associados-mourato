@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 540 120" width="100%" height="100%">
+  <defs>
+    <linearGradient id="mGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5DF98" />
+      <stop offset="45%" stop-color="#D4AF37" />
+      <stop offset="100%" stop-color="#996515" />
+    </linearGradient>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#141E33" />
+      <stop offset="100%" stop-color="#080D1A" />
+    </linearGradient>
+    <filter id="subtleGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Crest Icon -->
+  <g transform="translate(10, 10)">
+    <!-- Hexagonal Shield -->
+    <path d="M 50 2 L 95 24 L 95 72 L 50 98 L 5 72 L 5 24 Z" 
+          fill="url(#shieldGrad)" 
+          stroke="url(#mGold)" 
+          stroke-width="2.5" />
+    
+    <!-- Inner gold outline -->
+    <path d="M 50 8 L 88 27 L 88 68 L 50 91 L 12 68 L 12 27 Z" 
+          fill="none" 
+          stroke="url(#mGold)" 
+          stroke-width="1" 
+          opacity="0.4" />
+
+    <!-- Stylized M & Upward Arrow -->
+    <path d="M 26 74 L 26 34 L 40 56 L 50 40 L 60 56 L 74 34 L 74 74 L 64 74 L 64 48 L 54 64 L 46 64 L 36 48 L 36 74 Z" 
+          fill="url(#mGold)" 
+          filter="url(#subtleGlow)" />
+    
+    <!-- Top Apex Diamond -->
+    <polygon points="50,16 55,23 50,30 45,23" fill="#FFF2BD" />
+  </g>
+
+  <!-- Typography -->
+  <g transform="translate(125, 20)">
+    <!-- Main Brand Name -->
+    <text x="0" y="44" 
+          font-family="'Cinzel', 'Plus Jakarta Sans', serif, system-ui" 
+          font-size="34" 
+          font-weight="800" 
+          letter-spacing="4" 
+          fill="#FFFFFF">
+      MOURATO
+      <tspan fill="url(#mGold)" font-weight="600"> &amp; </tspan>
+      ASSOCIADOS
+    </text>
+
+    <!-- Subtitle / Tagline -->
+    <text x="3" y="70" 
+          font-family="'Plus Jakarta Sans', sans-serif" 
+          font-size="11.5" 
+          font-weight="600" 
+          letter-spacing="5" 
+          fill="url(#mGold)" 
+          opacity="0.95">
+      ASSESSORIA CORPORATIVA &amp; ESTRUTURAÇÃO FINANCEIRA
+    </text>
+
+    <!-- Micro metadata -->
+    <text x="3" y="86" 
+          font-family="'Plus Jakarta Sans', monospace, sans-serif" 
+          font-size="9" 
+          font-weight="400" 
+          letter-spacing="1.5" 
+          fill="#8A9BB5">
+      CNPJ 38.377.738/0001-45 • CAPITAL R$ 1.000.000,00 • SÃO PAULO - SP
+    </text>
+  </g>
+</svg>
