@@ -19,14 +19,14 @@ import {
   ChevronRight
 } from 'lucide-react';
 
-const STORAGE_KEY = 'mourato_clients_records_v1';
+const STORAGE_KEY = 'mourato_clients_records_v2';
 
 export const ClientManagementModal = ({ isOpen, onClose }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authForm, setAuthForm] = useState({ user: '', password: '' });
   const [authError, setAuthError] = useState('');
 
-  // Clients Database state
+  // Clients Database state - 100% limpo, sem clientes fictícios
   const [clients, setClients] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -34,29 +34,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
     } catch (e) {
       console.error(e);
     }
-    // Default initial mock clients
-    return [
-      {
-        id: 'cli-001',
-        nomeRazao: 'Vértice Distribuidora & Logística Ltda',
-        documento: '41.289.102/0001-88',
-        responsavel: 'Carlos Eduardo Mendes',
-        contato: '(11) 98765-4321',
-        banco: 'Itaú BBA',
-        agencia: '0950',
-        conta: '48291-5',
-        statusConta: 'Ativa / Homologada',
-        serasaScore: '840 / 1000 (Baixo Risco)',
-        serasaStatus: 'Sem Apontamentos',
-        govNivel: 'Ouro (Certificado Digital)',
-        govProtocolo: 'GOV-2026-881920',
-        quodStatus: 'Cadastrado Positivo Ativo',
-        boaVistaStatus: 'Score 810 - Regular',
-        limiteAprovado: 'R$ 3.500.000,00',
-        dataCadastro: '2026-09-20',
-        observacoesSigilosas: 'Operação de antecipação estruturada com spread reduzido de 2.2% a.a.'
-      }
-    ];
+    return [];
   });
 
   const [activeView, setActiveView] = useState('list'); // 'list' or 'new' or 'detail'
@@ -383,8 +361,20 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
             {activeView === 'list' && (
               <div>
                 {filteredClients.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '3rem 0', color: '#64748B' }}>
-                    Nenhum dossiê de cliente encontrado com o critério informado.
+                  <div style={{ textAlign: 'center', padding: '3.5rem 1rem', background: 'rgba(255,255,255,0.01)', border: '1px dashed var(--border-subtle)', borderRadius: 'var(--radius-xs)' }}>
+                    <div style={{ fontSize: '1rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.4rem' }}>
+                      Nenhum cliente cadastrado no momento.
+                    </div>
+                    <p style={{ fontSize: '0.85rem', color: '#8E9BAE', marginBottom: '1.2rem' }}>
+                      A base está 100% limpa (sem informações fictícias). Clique no botão abaixo para cadastrar seu primeiro cliente real.
+                    </p>
+                    <button
+                      onClick={() => setActiveView('new')}
+                      className="btn-primary-gold"
+                      style={{ padding: '0.65rem 1.4rem', fontSize: '0.8rem' }}
+                    >
+                      Cadastrar Primeiro Cliente
+                    </button>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '55vh', overflowY: 'auto' }}>
