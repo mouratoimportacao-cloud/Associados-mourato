@@ -1,134 +1,91 @@
-// Módulos Especializados da Mourato & Associados: Do Spread à Consultoria
-export const PLATFORM_MODULES = [
-  {
-    id: "visao-geral",
-    title: "1. Panorama Executivo & Ecossistema",
-    shortTitle: "Visão Geral",
-    badge: "Institucional",
-    color: "#D4AF37",
-    iconName: "Building2",
-    summary: "Apresentação da banca e chancela corporativa fundamentada no Contrato Social JUCESP e Capital Social de R$ 1.000.000,00."
-  },
-  {
-    id: "espectro-completo",
-    title: "2. O Espectro: Do Spread à Consultoria",
-    shortTitle: "Spread vs Consultoria",
-    badge: "Conceito Central",
-    color: "#60A5FA",
-    iconName: "ArrowLeftRight",
-    summary: "A clareza definitiva de como a Mourato & Associados opera: da redução do custo de capital (Spread) à transformação estrutural do negócio (Consultoria)."
-  },
-  {
-    id: "operacoes-spread",
-    title: "3. Engenharia de Spread & Operações Financeiras",
-    shortTitle: "Operações de Spread",
-    badge: "Financeiro / Liquidez",
-    color: "#34D399",
-    iconName: "TrendingUp",
-    summary: "Otimização de taxas bancárias, arbitragem de spread, antecipação de recebíveis e captação de recursos estruturados (CNAE 6619-3/99 & 7490-1/04)."
-  },
-  {
-    id: "consultoria-gestao",
-    title: "4. Consultoria Estratégica & Societária",
-    shortTitle: "Consultoria & Gestão",
-    badge: "Estratégia / Governança",
-    color: "#A78BFA",
-    iconName: "ShieldCheck",
-    summary: "Reestruturação societária, planejamento tributário avançado, contabilidade consultiva, governança familiar e M&A (CNAE 7020-4/00 & 6920-6/01)."
-  },
-  {
-    id: "simulador-interativo",
-    title: "5. Simulador Interativo de Economia & ROI",
-    shortTitle: "Simulador Financeiro",
-    badge: "Ferramenta Interativa",
-    color: "#FBBF24",
-    iconName: "Calculator",
-    summary: "Calcule em tempo real o impacto financeiro da redução de spread bancário somado ao ganho de eficiência da consultoria empresarial."
-  },
-  {
-    id: "auditoria-compliance",
-    title: "6. Certidão JUCESP, Contrato & Due Diligence",
-    shortTitle: "Auditoria & JUCESP",
-    badge: "Segurança Jurídica",
-    color: "#F472B6",
-    iconName: "FileCheck2",
-    summary: "Acesso transparente aos dados do arquivamento nº 35270804594, controle de autenticidade 299506304 e conformidade ICP-Brasil."
-  },
-  {
-    id: "portal-atendimento",
-    title: "7. Desk de Atendimento & Solicitação de Advisory",
-    shortTitle: "Desk Advisory",
-    badge: "Onboarding PJ",
-    color: "#38BDF8",
-    iconName: "Briefcase",
-    summary: "Inicie o relacionamento com a Mourato & Associados selecionando sua esteira de necessidade (Spread, Consultoria ou Modelo Híbrido)."
-  }
-];
-
-// Detalhamento do Espectro: Spread até Consultoria
-export const SPECTRUM_COMPARISON = {
+// Estrutura das Práticas Executivas - Mourato & Associados
+export const ADVISORY_PRACTICES = {
   spread: {
-    title: "Engenharia de Spread & Intermediação Financeira",
-    tag: "Foco: Custo do Dinheiro & Liquidez Imediata",
-    description: "Atuação direta nas fricções e taxas de captação, antecipação e crédito PJ. Eliminamos os spreads abusivos praticados pelos bancos de varejo através de esteiras de funding de atacado e agentes autorizados.",
-    metrics: [
-      { label: "Redução Média de Spread", value: "35% a 65%" },
-      { label: "Economia Anual de Juros", value: "R$ 180k a R$ 3.2M" },
-      { label: "Prazo de Liquidação", value: "24h a 72h" },
-      { label: "Volume Atendido", value: "R$ 200k a R$ 50M+" }
-    ],
-    features: [
-      "Intermediação de operações de crédito corporativo (CNAE 7490-1/04)",
-      "Redução cirúrgica do Spread Bancário (CDI + margem de risco)",
-      "Estruturação de antecipação de recebíveis (Duplicatas, Cartões, Contratos)",
-      "Captação de recursos via FIDCs, CRIs, CRAs e Debêntures privadas",
-      "Arbitragem cambial e spread de comércio exterior / operações bilaterais",
-      "Desbloqueio de garantias e reescalonamento de dívida com instituições financeiras"
-    ]
-  },
-  synergy: {
-    title: "A Conexão Híbrida: Por que a Mourato & Associados é Única?",
-    description: "Um intermediador comum apenas empurra crédito caro. Um consultor comum entrega relatórios que não trazem liquidez. A Mourato & Associados une os dois mundos:",
-    flow: [
+    id: "mercado-capitais-spread",
+    title: "Mercado de Capitais & Engenharia de Spread",
+    category: "Estruturação & Liquidez",
+    lead: "Redução do custo marginal de capital e desintermediação bancária para empresas de médio e grande porte.",
+    overview: "Atuamos diretamente na substituição do crédito bancário tradicional de varejo por instrumentos estruturados e linhas de atacado. Reduzimos o spread (CDI + spread) e destravamos operações com cronogramas e garantias adequadas à capacidade do caixa.",
+    capabilities: [
       {
-        step: 1,
-        title: "Diagnóstico Contábil & Fiscal",
-        desc: "Limpamos o balanço da empresa, organizamos a contabilidade consultiva e removemos passivos ocultos."
+        title: "Otimização de Spread Bancário",
+        description: "Repactuação e reestruturação de linhas de capital de giro e dívida corporativa com taxas negociadas em mesas institucionais."
       },
       {
-        step: 2,
-        title: "Elevação do Rating Corporativo",
-        desc: "Com balanço auditado e governança alinhada, o rating de crédito da empresa sobe perante bancos e fundos."
+        title: "Antecipação de Recebíveis & Acesso a FIDCs",
+        description: "Cessão de direitos creditórios e deságio de atacado sem exigência de reciprocidades predatórias de bancos comerciais."
       },
       {
-        step: 3,
-        title: "Contratação com Menor Spread",
-        desc: "Com o risco reduzido pelo trabalho de consultoria, negociamos linhas de crédito com os menores spreads do mercado."
+        title: "Captações Estruturadas (CRI, CRA, Debêntures)",
+        description: "Emissão e colocação de títulos de dívida corporativa privada com prazos alongados e carência compatível com o ciclo de retorno."
       },
       {
-        step: 4,
-        title: "Retenção de Caixa & Expansão",
-        desc: "O capital economizado nos spreads é reinvestido na operação sob a mentoria de gestão estratégica."
+        title: "Câmbio Comercial & Comércio Exterior",
+        description: "Arbitragem de spread cambial para importadores e exportadores, além de mecanismos de proteção cambial (Hedge/NDF)."
       }
+    ],
+    indicators: [
+      { label: "Redução Típica de Spread", value: "30% a 55%" },
+      { label: "Instrumentos", value: "Atacado / FIDCs / DCM" },
+      { label: "Padrão de Atendimento", value: "Corporate & Middle Market" }
     ]
   },
+
   consultoria: {
-    title: "Consultoria em Gestão Empresarial & Societária",
-    tag: "Foco: Governança, Margem Operacional & Perenidade",
-    description: "Acompanhamento consultivo de alto impacto para elevar a eficiência operacional, planejar sucessão, otimizar a carga tributária e preparar a empresa para fusões ou captações de equity.",
-    metrics: [
-      { label: "Ganhos de Eficiência EBITDA", value: "+18% a +42%" },
-      { label: "Recuperação Tributária Legítima", value: "R$ 90k a R$ 1.8M" },
-      { label: "Conformidade Regulatória", value: "100% Blindada" },
-      { label: "Horizonte Estratégico", value: "Plano 3 a 5 anos" }
+    id: "consultoria-estrategica",
+    title: "Consultoria em Gestão, Contabilidade & Societário",
+    category: "Governança & Estratégia",
+    lead: "Assessoria consultiva de alta densidade para reorganização societária, eficiência fiscal e blindagem de margem.",
+    overview: "Apoiamos acionistas e diretorias na condução de reorganizações societárias, implantação de contabilidade consultiva orientada a covenants e modelagem tributária preventiva, preparando a empresa para ciclos de crescimento sustentado ou transações corporativas.",
+    capabilities: [
+      {
+        title: "Reestruturação Societária & Acordo de Sócios",
+        description: "Desenho de estruturas societárias holding, regulação de governança patrimonial e blindagem das relações intersocietárias."
+      },
+      {
+        title: "Contabilidade Consultiva & Inteligência de Balanço",
+        description: "Elaboração e auditoria contábil com foco na adequação de índices para elevação de rating de crédito institucional."
+      },
+      {
+        title: "Planejamento Tributário Estratégico",
+        description: "Diagnóstico profundo de regimes e aproveitamento lícito de benefícios fiscais, gerando alívio sustentável no fluxo de caixa."
+      },
+      {
+        title: "Valuation & Assessoria em M&A",
+        description: "Avaliação econômico-financeira por Fluxo de Caixa Descontado (DCF) e assessoria técnica em fusões, aquisições e desinvestimentos."
+      }
     ],
-    features: [
-      "Consultoria de gestão empresarial e governança (CNAE 7020-4/00)",
-      "Contabilidade consultiva e auditoria de balancetes (CNAE 6920-6/01)",
-      "Planejamento tributário estratégico e redução da carga fiscal dentro da lei",
-      "Transformação societária (EIRELI/MEI para LTDA, holding patrimonial)",
-      "Valuation com método de Fluxo de Caixa Descontado (DCF) e M&A Advisory",
-      "Elaboração de acordos de sócios, blindagem patrimonial e sucessão familiar"
+    indicators: [
+      { label: "Foco de Atuação", value: "Governança & EBITDA" },
+      { label: "Conformidade", value: "Rigor Técnico & Diligência" },
+      { label: "Relação", value: "Advisory Continuado" }
+    ]
+  },
+
+  synergy: {
+    title: "A Abordagem Integrada: Do Spread à Consultoria",
+    lead: "Por que uma firma integrada entrega valor superior a consultorias teóricas ou bancos isolados?",
+    steps: [
+      {
+        phase: "01",
+        name: "Saneamento & Governança Contábil",
+        desc: "Nossos consultores organizam as demonstrações contábeis e ajustam os indicadores de endividamento da empresa."
+      },
+      {
+        phase: "02",
+        name: "Elevação do Rating Corporativo",
+        desc: "Com números auditados e governança transparente, a percepção de risco de crédito junto ao mercado diminui."
+      },
+      {
+        phase: "03",
+        name: "Captura de Spreads Reduzidos",
+        desc: "Nossa mesa de mercado de capitais aproveita a qualidade do crédito para negociar as menores taxas de spread disponíveis."
+      },
+      {
+        phase: "04",
+        name: "Preservação de Caixa & Perenidade",
+        desc: "Os recursos poupados no spread retroalimentam o plano de expansão estruturado pela consultoria estratégica."
+      }
     ]
   }
 };

@@ -1,172 +1,125 @@
 import React from 'react';
-import { 
-  ShieldCheck, 
-  ArrowRight, 
-  Coins, 
-  BarChart3, 
-  Building, 
-  CheckCircle2, 
-  Award,
-  Scale
-} from 'lucide-react';
-import { CONTRACT_DATA } from '../data/contractData';
+import { ArrowRight, ArrowUpRight, Shield, Layers, TrendingUp } from 'lucide-react';
+import { COMPANY_DATA } from '../data/companyData';
 
-export const HeroSection = ({ onNavigate, onOpenOnboarding }) => {
+export const HeroSection = ({ onNavigate, onOpenContact }) => {
   return (
     <section style={{
       position: 'relative',
-      padding: '4.5rem 0 3.5rem',
-      overflow: 'hidden'
+      padding: '5.5rem 0 4.5rem',
+      borderBottom: '1px solid var(--border-subtle)',
+      background: 'radial-gradient(ellipse at 50% 10%, rgba(197, 168, 105, 0.05) 0%, transparent 70%)'
     }}>
-      {/* Background Decorative Rings */}
-      <div style={{
-        position: 'absolute',
-        top: '-10%',
-        right: '-5%',
-        width: '550px',
-        height: '550px',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(212, 175, 55, 0.08) 0%, transparent 70%)',
-        pointerEvents: 'none',
-        zIndex: 0
-      }} />
-
-      <div className="container-xl" style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto', textAlign: 'center' }}>
+      <div className="container-xl">
+        <div style={{ maxWidth: '880px', margin: '0 auto', textAlign: 'center' }}>
           
+          {/* Official Emblem Mark */}
+          <div style={{ marginBottom: '2rem', display: 'inline-block' }}>
+            <img 
+              src="/mourato-logo-transp.png" 
+              alt="Mourato & Associados" 
+              style={{ 
+                height: '92px', 
+                width: 'auto', 
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 4px 18px rgba(197, 168, 105, 0.25))'
+              }} 
+            />
+          </div>
+
           {/* Institutional Badge */}
-          <div style={{ display: 'inline-flex', marginBottom: '1.25rem' }}>
-            <span className="badge-gold" style={{ padding: '0.45rem 1.2rem', gap: '0.6rem' }}>
-              <Award size={15} color="#D4AF37" />
-              CAPITAL REGISTRADO: R$ 1.000.000,00 • JUCESP NIRE 35270804594
+          <div style={{ display: 'block', marginBottom: '1.25rem' }}>
+            <span className="badge-institutional">
+              ASSESSORIA BOUTIQUE INDEPENDENTE • CNPJ {COMPANY_DATA.cnpj}
             </span>
           </div>
 
-          {/* Main Title */}
-          <h1 style={{
-            fontSize: 'clamp(2.1rem, 4.5vw, 3.4rem)',
-            fontWeight: 800,
-            lineHeight: 1.15,
-            marginBottom: '1.5rem',
-            color: '#FFFFFF'
-          }}>
-            Assessoria de Alta Performance: <br />
-            <span className="text-gradient-gold">Da Engenharia de Spread</span> à <br />
-            <span className="text-gradient-blue">Consultoria Empresarial</span>
+          {/* Title */}
+          <h1 style={{ marginBottom: '1.5rem', fontWeight: 800 }}>
+            Da Engenharia de Spread Financeiro <br />
+            <span className="text-gradient-gold">à Consultoria Empresarial &amp; Societária</span>
           </h1>
 
-          {/* Subtitle explicitly answering user's core request */}
+          {/* Subtitle */}
           <p style={{
-            fontSize: 'clamp(1rem, 1.3vw, 1.2rem)',
-            color: '#94A3B8',
-            lineHeight: 1.65,
-            marginBottom: '2.5rem',
-            maxWidth: '740px',
+            fontSize: '1.1rem',
+            color: '#CBD5E1',
+            lineHeight: 1.7,
+            maxWidth: '760px',
             margin: '0 auto 2.5rem'
           }}>
-            A <strong style={{ color: '#F8FAFC' }}>Mourato & Associados</strong> opera na convergência entre o 
-            <span style={{ color: '#34D399', fontWeight: 600 }}> mercado financeiro de atacado (otimização de spread bancário e funding)</span> e a 
-            <span style={{ color: '#60A5FA', fontWeight: 600 }}> consultoria societária, contábil e de gestão</span>. 
-            Reduzimos o custo do seu capital e blindamos a governança da sua empresa.
+            A <strong style={{ color: '#FFFFFF' }}>Mourato &amp; Associados</strong> posiciona-se na intersecção entre o mercado de capitais e a gestão corporativa de alta complexidade. Desintermediamos o crédito bancário para reduzir seu custo de financiamento e estruturamos a governança contábil e societária da sua empresa.
           </p>
 
-          {/* Action Buttons */}
+          {/* Action CTAs */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             gap: '1rem',
             flexWrap: 'wrap',
-            marginBottom: '3.5rem'
+            marginBottom: '4rem'
           }}>
             <button 
-              className="btn-gold" 
-              onClick={() => onNavigate('espectro-completo')}
-              style={{ fontSize: '1rem', padding: '0.95rem 1.8rem' }}
+              className="btn-primary-gold"
+              onClick={() => onNavigate('espectro')}
             >
-              Compreender o Espectro (Spread à Consultoria)
-              <ArrowRight size={18} />
+              Compreender o Espectro de Atuação
+              <ArrowRight size={15} />
             </button>
 
             <button 
-              className="btn-secondary" 
-              onClick={() => onNavigate('simulador-interativo')}
-              style={{ fontSize: '1rem', padding: '0.95rem 1.8rem' }}
+              className="btn-secondary-subtle"
+              onClick={() => onNavigate('simulador')}
             >
-              <Coins size={18} color="#D4AF37" />
-              Simular Redução de Spread
+              Simular Otimização de Spread
+              <ArrowUpRight size={15} />
             </button>
           </div>
+
         </div>
 
-        {/* 4 Pillars Stats Grid */}
-        <div className="grid-cols-4" style={{ gap: '1.25rem' }}>
+        {/* 3 Executive Pillars (Minimalist, Sober, Sophisticated) */}
+        <div className="grid-3" style={{ marginTop: '1rem' }}>
           
-          {/* Card 1 */}
-          <div className="glass-panel interactive-card" style={{ padding: '1.5rem', borderLeft: '3px solid #D4AF37' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#D4AF37', letterSpacing: '0.05em' }}>
-                Solidez Patrimonial
-              </span>
-              <Building size={20} color="#D4AF37" />
+          <div className="advisory-card">
+            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gold-light)', marginBottom: '0.5rem', fontWeight: 700 }}>
+              01 • Liquidez &amp; Mercado
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#F8FAFC', fontFamily: "'Cinzel', serif" }}>
-              R$ 1.000.000
-            </div>
-            <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.3rem' }}>
-              Capital Social 100% integralizado em moeda corrente nacional.
-            </div>
+            <h3 style={{ marginBottom: '0.6rem', color: '#FFFFFF' }}>
+              Engenharia de Spread
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#94A3B8', lineHeight: 1.6 }}>
+              Desoneração de taxas bancárias, substituição de linhas predatórias de varejo por funding de atacado (FIDCs e debêntures) e antecipação com deságio otimizado.
+            </p>
           </div>
 
-          {/* Card 2 */}
-          <div className="glass-panel interactive-card" style={{ padding: '1.5rem', borderLeft: '3px solid #34D399' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#34D399', letterSpacing: '0.05em' }}>
-                Engenharia de Spread
-              </span>
-              <Coins size={20} color="#34D399" />
+          <div className="advisory-card">
+            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gold-light)', marginBottom: '0.5rem', fontWeight: 700 }}>
+              02 • Estrutura &amp; Governança
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#F8FAFC', fontFamily: "'Cinzel', serif" }}>
-              -35% a -65%
-            </div>
-            <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.3rem' }}>
-              Corte médio do spread bancário e otimização de taxas de antecipação.
-            </div>
+            <h3 style={{ marginBottom: '0.6rem', color: '#FFFFFF' }}>
+              Consultoria Estratégica
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#94A3B8', lineHeight: 1.6 }}>
+              Reorganização societária (Holdings), contabilidade consultiva orientada a covenants, eficiência tributária e preparação para M&amp;A ou sucessão.
+            </p>
           </div>
 
-          {/* Card 3 */}
-          <div className="glass-panel interactive-card" style={{ padding: '1.5rem', borderLeft: '3px solid #60A5FA' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#60A5FA', letterSpacing: '0.05em' }}>
-                Consultoria & Gestão
-              </span>
-              <BarChart3 size={20} color="#60A5FA" />
+          <div className="advisory-card">
+            <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--gold-light)', marginBottom: '0.5rem', fontWeight: 700 }}>
+              03 • Diferencial Competitivo
             </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#F8FAFC', fontFamily: "'Cinzel', serif" }}>
-              360° Corporativo
-            </div>
-            <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.3rem' }}>
-              Reestruturação societária, contabilidade consultiva e governança.
-            </div>
-          </div>
-
-          {/* Card 4 */}
-          <div className="glass-panel interactive-card" style={{ padding: '1.5rem', borderLeft: '3px solid #A78BFA' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.8rem' }}>
-              <span style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#A78BFA', letterSpacing: '0.05em' }}>
-                Conformidade JUCESP
-              </span>
-              <ShieldCheck size={20} color="#A78BFA" />
-            </div>
-            <div style={{ fontSize: '1.6rem', fontWeight: 800, color: '#F8FAFC', fontFamily: "'Cinzel', serif" }}>
-              5 CNAEs Plenos
-            </div>
-            <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.3rem' }}>
-              Atividades financeiras, contábeis e de consultoria legalmente homologadas.
-            </div>
+            <h3 style={{ marginBottom: '0.6rem', color: '#FFFFFF' }}>
+              A Abordagem Integrada
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: '#94A3B8', lineHeight: 1.6 }}>
+              A consultoria saneia e valoriza o balanço da empresa, reduzindo o risco percebido e destravando os menores spreads de crédito do mercado financeiro.
+            </p>
           </div>
 
         </div>
+
       </div>
     </section>
   );

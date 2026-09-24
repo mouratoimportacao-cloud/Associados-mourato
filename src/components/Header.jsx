@@ -1,180 +1,109 @@
 import React from 'react';
-import { 
-  Building2, 
-  ArrowLeftRight, 
-  TrendingUp, 
-  ShieldCheck, 
-  Calculator, 
-  FileCheck2, 
-  Briefcase, 
-  PhoneCall, 
-  ExternalLink 
-} from 'lucide-react';
-import { PLATFORM_MODULES } from '../data/modulesData';
-import { CONTRACT_DATA } from '../data/contractData';
+import { COMPANY_DATA } from '../data/companyData';
+import { ArrowUpRight } from 'lucide-react';
 
-export const Header = ({ activeModule, setActiveModule, onOpenOnboarding }) => {
-  const getIcon = (name) => {
-    switch (name) {
-      case 'Building2': return <Building2 size={16} />;
-      case 'ArrowLeftRight': return <ArrowLeftRight size={16} />;
-      case 'TrendingUp': return <TrendingUp size={16} />;
-      case 'ShieldCheck': return <ShieldCheck size={16} />;
-      case 'Calculator': return <Calculator size={16} />;
-      case 'FileCheck2': return <FileCheck2 size={16} />;
-      case 'Briefcase': return <Briefcase size={16} />;
-      default: return null;
-    }
-  };
-
+export const Header = ({ onNavigate, onOpenContact }) => {
   return (
-    <header className="header-sticky">
-      {/* Top Bar with Legal Cert & Registration */}
+    <header className="header-institutional">
+      {/* Discreet Institutional Top Line */}
       <div style={{
-        background: 'linear-gradient(90deg, #090e17 0%, #111a2d 50%, #090e17 100%)',
-        borderBottom: '1px solid rgba(212, 175, 55, 0.15)',
-        padding: '0.35rem 1.5rem',
-        fontSize: '0.75rem',
-        color: '#94A3B8',
+        background: '#070A0F',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+        padding: '0.35rem 1.75rem',
+        fontSize: '0.72rem',
+        letterSpacing: '0.08em',
+        color: '#8E9BAE',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '0.5rem'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', color: '#E5C365', fontWeight: 600 }}>
-            <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10B981', display: 'inline-block', boxShadow: '0 0 8px #10B981' }}></span>
-            JUCESP REGISTRADA
-          </span>
-          <span>NIRE: <strong style={{ color: '#F8FAFC' }}>{CONTRACT_DATA.empresa.nire}</strong></span>
-          <span>CNPJ: <strong style={{ color: '#F8FAFC' }}>{CONTRACT_DATA.empresa.cnpj}</strong></span>
-          <span>Capital: <strong style={{ color: '#34D399' }}>R$ 1.000.000,00</strong></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span>MOURATO &amp; ASSOCIADOS LTDA</span>
+          <span>•</span>
+          <span>CNPJ: <strong style={{ color: '#CBD5E1' }}>{COMPANY_DATA.cnpj}</strong></span>
+          <span>•</span>
+          <span>{COMPANY_DATA.localizacao}</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <span>Sede: Av. São Luís, 187 - República, SP</span>
-          <button 
-            onClick={() => setActiveModule('auditoria-compliance')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#D4AF37',
-              cursor: 'pointer',
-              fontSize: '0.75rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              fontWeight: 600
-            }}
-          >
-            Ver Certidão JUCESP <ExternalLink size={12} />
-          </button>
+        <div>
+          <span>ASSESSORIA CORPORATIVA &amp; ESTRUTURAÇÃO FINANCEIRA</span>
         </div>
       </div>
 
-      {/* Main Brand & Action Header */}
-      <div className="header-container">
+      {/* Main Bar with Official Logo */}
+      <div className="header-inner">
+        
+        {/* Brand Logo & Wordmark */}
         <div 
-          onClick={() => setActiveModule('visao-geral')} 
+          onClick={() => onNavigate('hero')}
           style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
         >
-          {/* Bespoke Crest SVG */}
-          <div style={{
-            width: 48,
-            height: 48,
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #141e33 0%, #080d1a 100%)',
-            border: '1.5px solid rgba(212, 175, 55, 0.4)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 14px rgba(0,0,0,0.5), 0 0 15px rgba(212,175,55,0.2)'
-          }}>
-            <svg viewBox="0 0 100 100" width="34" height="34">
-              <path d="M 50 4 L 92 25 L 92 70 L 50 94 L 8 70 L 8 25 Z" fill="none" stroke="#D4AF37" strokeWidth="2.5" />
-              <path d="M 28 72 L 28 32 L 40 52 L 50 38 L 60 52 L 72 32 L 72 72 L 62 72 L 62 46 L 54 60 L 46 60 L 38 46 L 38 72 Z" fill="#F8E29E" />
-              <polygon points="50,14 55,20 50,26 45,20" fill="#FFFFFF" />
-            </svg>
-          </div>
-
+          <img 
+            src="/mourato-logo-transp.png" 
+            alt="Mourato & Associados" 
+            style={{ 
+              height: '48px', 
+              width: 'auto', 
+              objectFit: 'contain',
+              filter: 'drop-shadow(0 2px 8px rgba(197, 168, 105, 0.2))'
+            }} 
+          />
           <div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-              <span style={{
-                fontFamily: "'Cinzel', serif",
-                fontSize: '1.35rem',
-                fontWeight: 800,
-                letterSpacing: '0.08em',
-                color: '#FFFFFF'
-              }}>
-                MOURATO <span style={{ color: '#D4AF37', fontWeight: 600 }}>&amp;</span> ASSOCIADOS
-              </span>
+            <div style={{
+              fontFamily: "var(--font-serif)",
+              fontSize: '1.25rem',
+              fontWeight: 800,
+              letterSpacing: '0.06em',
+              color: '#FFFFFF'
+            }}>
+              MOURATO <span style={{ color: 'var(--gold-primary)', fontWeight: 600 }}>&amp;</span> ASSOCIADOS
             </div>
             <div style={{
-              fontSize: '0.7rem',
-              letterSpacing: '0.15em',
+              fontSize: '0.66rem',
+              letterSpacing: '0.14em',
               textTransform: 'uppercase',
-              color: '#D4AF37',
-              fontWeight: 700,
+              color: 'var(--gold-light)',
+              fontWeight: 600,
               marginTop: '-2px'
             }}>
-              Do Spread Financeiro à Consultoria Empresarial
+              Corporate Advisory &amp; Financial Engineering
             </div>
           </div>
         </div>
 
-        {/* CTA Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-          <button 
-            className="btn-outline-gold"
-            onClick={() => setActiveModule('simulador-interativo')}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.85rem', padding: '0.6rem 1.1rem' }}
-          >
-            <Calculator size={15} />
-            Simulador de Spread
+        {/* Navigation Links */}
+        <nav className="nav-links">
+          <button className="nav-link-btn" onClick={() => onNavigate('espectro')}>
+            O Espectro
           </button>
+          <button className="nav-link-btn" onClick={() => onNavigate('spread')}>
+            Mercado de Capitais &amp; Spread
+          </button>
+          <button className="nav-link-btn" onClick={() => onNavigate('consultoria')}>
+            Consultoria Estratégica
+          </button>
+          <button className="nav-link-btn" onClick={() => onNavigate('simulador')}>
+            Simulador Financeiro
+          </button>
+          <button className="nav-link-btn" onClick={() => onNavigate('governanca')}>
+            Governança &amp; Compliance
+          </button>
+        </nav>
 
+        {/* Action Button */}
+        <div>
           <button 
-            className="btn-gold"
-            onClick={onOpenOnboarding}
-            style={{ fontSize: '0.85rem', padding: '0.6rem 1.25rem' }}
+            className="btn-primary-gold" 
+            onClick={onOpenContact}
+            style={{ padding: '0.65rem 1.35rem', fontSize: '0.8rem' }}
           >
-            <Briefcase size={15} />
-            Solicitar Advisory
+            Agendamento Executivo
+            <ArrowUpRight size={14} />
           </button>
         </div>
-      </div>
 
-      {/* Modular Navigation Bar */}
-      <div style={{ background: 'rgba(11, 17, 30, 0.95)', borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-        <div className="container-xl">
-          <nav className="nav-modules-bar" aria-label="Módulos da Plataforma">
-            {PLATFORM_MODULES.map((mod) => {
-              const isActive = activeModule === mod.id;
-              return (
-                <button
-                  key={mod.id}
-                  onClick={() => setActiveModule(mod.id)}
-                  className={`nav-module-item ${isActive ? 'active' : ''}`}
-                >
-                  <span style={{ color: isActive ? '#D4AF37' : '#94A3B8' }}>
-                    {getIcon(mod.iconName)}
-                  </span>
-                  <span>{mod.shortTitle}</span>
-                  {isActive && (
-                    <span style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: '50%',
-                      background: '#D4AF37',
-                      display: 'inline-block'
-                    }}></span>
-                  )}
-                </button>
-              );
-            })}
-          </nav>
-        </div>
       </div>
     </header>
   );

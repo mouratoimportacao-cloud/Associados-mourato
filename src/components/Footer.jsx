@@ -1,183 +1,181 @@
 import React from 'react';
-import { 
-  Building2, 
-  ShieldCheck, 
-  MapPin, 
-  FileText, 
-  Coins, 
-  Briefcase, 
-  Phone, 
-  Mail,
-  ExternalLink,
-  ChevronRight
-} from 'lucide-react';
-import { CONTRACT_DATA } from '../data/contractData';
-import { PLATFORM_MODULES } from '../data/modulesData';
+import { COMPANY_DATA } from '../data/companyData';
+import { ArrowUpRight } from 'lucide-react';
 
-export const Footer = ({ onNavigate, onOpenOnboarding }) => {
+export const Footer = ({ onNavigate, onOpenContact }) => {
   return (
     <footer style={{
-      background: '#04070D',
-      borderTop: '1px solid rgba(212, 175, 55, 0.25)',
-      padding: '4.5rem 0 2rem',
-      position: 'relative'
+      background: '#07090E',
+      borderTop: '1px solid var(--border-subtle)',
+      padding: '4.5rem 0 2rem'
     }}>
       <div className="container-xl">
         
-        {/* Top 4-Column Grid */}
-        <div className="grid-cols-4" style={{ gap: '2.5rem', marginBottom: '3.5rem' }}>
+        {/* Main Grid */}
+        <div className="grid-4" style={{ gap: '2.5rem', marginBottom: '3.5rem' }}>
           
-          {/* Brand Col with the Official Logo */}
+          {/* Col 1: Brand & Logo */}
           <div style={{ gridColumn: 'span 1' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.2rem' }}>
-              <div style={{
-                background: '#FFFFFF',
-                padding: '4px 8px',
-                borderRadius: '8px',
-                border: '1.5px solid #D4AF37',
-                display: 'inline-flex',
-                boxShadow: '0 4px 12px rgba(212,175,55,0.2)'
-              }}>
-                <img 
-                  src="/mourato-logo.png" 
-                  alt="Mourato & Associados" 
-                  style={{ height: '40px', width: 'auto', objectFit: 'contain' }} 
-                />
+              <img 
+                src="/mourato-logo-transp.png" 
+                alt="Mourato & Associados" 
+                style={{ height: '44px', width: 'auto', objectFit: 'contain' }} 
+              />
+              <div>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
+                  MOURATO &amp; ASSOCIADOS
+                </div>
+                <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold-light)' }}>
+                  Corporate Advisory
+                </div>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.6, marginBottom: '1.2rem' }}>
-              Banca corporativa especializada na convergência entre a engenharia de spread financeiro, intermediação de crédito PJ, consultoria de gestão e contabilidade societária.
+            <p style={{ fontSize: '0.86rem', color: '#94A3B8', lineHeight: 1.6, marginBottom: '1.2rem' }}>
+              Boutique independente de inteligência financeira e corporativa, especializada na convergência entre mercado de capitais, desintermediação de spread bancário e governança consultiva.
             </p>
 
-            <div style={{ fontSize: '0.78rem', color: '#E5C365', fontWeight: 600 }}>
-              Capital Social: R$ 1.000.000,00 Integralizado
+            <div style={{ fontSize: '0.78rem', color: '#CBD5E1' }}>
+              CNPJ: {COMPANY_DATA.cnpj} • {COMPANY_DATA.localizacao}
             </div>
           </div>
 
-          {/* Quick Nav Modules */}
+          {/* Col 2: Práticas */}
           <div>
-            <h4 style={{ fontSize: '0.95rem', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.2rem' }}>
-              Módulos da Plataforma
-            </h4>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-              {PLATFORM_MODULES.slice(0, 5).map((m) => (
-                <li key={m.id}>
-                  <button
-                    onClick={() => onNavigate(m.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: '#94A3B8',
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.3rem',
-                      padding: 0,
-                      transition: 'color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.target.style.color = '#F8E29E'}
-                    onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
-                  >
-                    <ChevronRight size={14} color="#D4AF37" />
-                    {m.title}
-                  </button>
-                </li>
-              ))}
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
+              Práticas
+            </div>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.86rem' }}>
+              <li>
+                <button 
+                  onClick={() => onNavigate('spread')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Otimização de Spread Bancário
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate('spread')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Antecipação &amp; FIDCs
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate('spread')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Títulos Privados (CRI, CRA, Debêntures)
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate('spread')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Câmbio Comercial &amp; Hedge
+                </button>
+              </li>
             </ul>
           </div>
 
-          {/* Compliance & Legal JUCESP */}
+          {/* Col 3: Consultoria */}
           <div>
-            <h4 style={{ fontSize: '0.95rem', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.2rem' }}>
-              Conformidade &amp; Registro
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.82rem', color: '#94A3B8' }}>
-              <div>
-                <strong style={{ color: '#F8FAFC' }}>Razão Social:</strong><br />
-                {CONTRACT_DATA.empresa.razaoSocial}
-              </div>
-              <div>
-                <strong style={{ color: '#F8FAFC' }}>CNPJ:</strong> {CONTRACT_DATA.empresa.cnpj}
-              </div>
-              <div>
-                <strong style={{ color: '#F8FAFC' }}>NIRE:</strong> {CONTRACT_DATA.empresa.nire}
-              </div>
-              <div>
-                <strong style={{ color: '#F8FAFC' }}>Protocolo:</strong> {CONTRACT_DATA.empresa.protocoloJucesp}
-              </div>
-              <button 
-                onClick={() => onNavigate('auditoria-compliance')}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#D4AF37',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  padding: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.3rem',
-                  marginTop: '0.4rem'
-                }}
-              >
-                Auditar Certidão JUCESP <ExternalLink size={12} />
-              </button>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
+              Consultoria &amp; Governança
             </div>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.86rem' }}>
+              <li>
+                <button 
+                  onClick={() => onNavigate('consultoria')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Reorganização Societária &amp; Holdings
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate('consultoria')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Contabilidade Consultiva &amp; Covenants
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate('consultoria')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Planejamento Tributário Estratégico
+                </button>
+              </li>
+              <li>
+                <button 
+                  onClick={() => onNavigate('consultoria')}
+                  style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: 0 }}
+                  onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
+                  onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
+                >
+                  Valuation &amp; Assessoria em M&amp;A
+                </button>
+              </li>
+            </ul>
           </div>
 
-          {/* Sede & Direct Contact */}
+          {/* Col 4: Relacionamento */}
           <div>
-            <h4 style={{ fontSize: '0.95rem', color: '#FFFFFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '1.2rem' }}>
-              Sede Corporativa
-            </h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', fontSize: '0.85rem', color: '#94A3B8' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem' }}>
-                <MapPin size={16} color="#D4AF37" style={{ marginTop: '2px', flexShrink: 0 }} />
-                <span>
-                  {CONTRACT_DATA.endereco.localizacaoCompleta}
-                </span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <ShieldCheck size={16} color="#10B981" />
-                <span>Atividades iniciadas em 09/12/2020</span>
-              </div>
-
-              <div style={{ marginTop: '0.5rem' }}>
-                <button 
-                  className="btn-gold" 
-                  onClick={onOpenOnboarding}
-                  style={{ width: '100%', fontSize: '0.85rem', padding: '0.65rem 1rem' }}
-                >
-                  <Briefcase size={14} />
-                  Falar com Sócio Diretor
-                </button>
-              </div>
+            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
+              Atendimento Direto
             </div>
+            <p style={{ fontSize: '0.86rem', color: '#94A3B8', lineHeight: 1.6, marginBottom: '1.2rem' }}>
+              Mandatos conduzidos com sigilo estrito e governança de dados garantida por acordo de confidencialidade.
+            </p>
+            <button 
+              className="btn-primary-gold" 
+              onClick={onOpenContact}
+              style={{ padding: '0.65rem 1.25rem', fontSize: '0.8rem', width: '100%' }}
+            >
+              Falar com a Diretoria
+              <ArrowUpRight size={14} />
+            </button>
           </div>
 
         </div>
 
-        {/* Bottom Legal Disclaimer */}
+        {/* Bottom Legal Bar */}
         <div style={{
-          borderTop: '1px solid rgba(255, 255, 255, 0.08)',
-          paddingTop: '1.8rem',
+          borderTop: '1px solid var(--border-subtle)',
+          paddingTop: '1.5rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '1rem',
-          fontSize: '0.78rem',
+          fontSize: '0.76rem',
           color: '#64748B'
         }}>
           <div>
-            © {new Date().getFullYear()} MOURATO E ASSOCIADOS LTDA. Todos os direitos reservados.
+            © {new Date().getFullYear()} Mourato e Associados Ltda. Todos os direitos reservados. CNPJ: {COMPANY_DATA.cnpj}.
           </div>
           <div>
-            Desenvolvido conforme Contrato Social Registrado sob NIRE 35270804594 e Autenticação JUCESP 299506304.
+            São Paulo - SP • Atendimento Corporativo em Todo o Território Nacional.
           </div>
         </div>
 

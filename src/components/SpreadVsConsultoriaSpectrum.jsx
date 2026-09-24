@@ -1,289 +1,286 @@
 import React, { useState } from 'react';
-import { 
-  ArrowLeftRight, 
-  TrendingUp, 
-  ShieldCheck, 
-  Zap, 
-  Layers, 
-  Coins, 
-  Check, 
-  ArrowRight,
-  Sparkles,
-  HelpCircle
-} from 'lucide-react';
-import { SPECTRUM_COMPARISON } from '../data/modulesData';
+import { ArrowRight, Check } from 'lucide-react';
+import { ADVISORY_PRACTICES } from '../data/modulesData';
 
-export const SpreadVsConsultoriaSpectrum = ({ onNavigateToSimulator, onOpenOnboarding }) => {
-  const [activeTab, setActiveTab] = useState('synergy'); // 'spread', 'synergy', 'consultoria'
+export const SpreadVsConsultoriaSpectrum = ({ onNavigateToSimulator, onOpenContact }) => {
+  const [activeTab, setActiveTab] = useState('synergy');
 
   return (
-    <section id="modulo-espectro" style={{ padding: '4rem 0', background: 'rgba(9, 14, 25, 0.6)' }}>
+    <section id="espectro" style={{ padding: '5rem 0', borderBottom: '1px solid var(--border-subtle)' }}>
       <div className="container-xl">
         
-        {/* Section Header */}
+        {/* Header */}
         <div style={{ textAlign: 'center', maxWidth: '820px', margin: '0 auto 3rem' }}>
-          <span className="badge-blue" style={{ marginBottom: '0.8rem' }}>
-            <ArrowLeftRight size={14} />
-            DIFERENCIAL COMPETITIVO CLARO
+          <span className="badge-institutional" style={{ marginBottom: '0.8rem' }}>
+            ESPECTRO DE ATUAÇÃO ESTRATÉGICA
           </span>
-          <h2 style={{ fontSize: 'clamp(1.8rem, 3.2vw, 2.6rem)', marginBottom: '1rem' }}>
-            O Espectro Completo: <br />
-            <span className="text-gradient-gold">Da Engenharia de Spread</span> à <span className="text-gradient-blue">Consultoria Estratégica</span>
+          <h2 style={{ marginBottom: '1rem' }}>
+            Da Engenharia de Spread à Consultoria Empresarial
           </h2>
-          <p style={{ color: '#94A3B8', fontSize: '1.05rem', lineHeight: 1.6 }}>
-            Entenda detalhadamente a abrangência da <strong>Mourato & Associados</strong>. Não atuamos como intermediários isolados nem como consultores acadêmicos. Entregamos a <strong>liquidez imediata no spread</strong> com a <strong>sustentabilidade de longo prazo na consultoria</strong>.
+          <p style={{ color: '#94A3B8', fontSize: '1.02rem', lineHeight: 1.65 }}>
+            A Mourato &amp; Associados rejeita o modelo fragmentado. Não atuamos como meros intermediadores de empréstimos caros nem como consultorias acadêmicas distantes da liquidez. Integramos o <strong>corte de spread bancário</strong> com a <strong>organização societária e contábil de longo prazo</strong>.
           </p>
         </div>
 
-        {/* Interactive Segmented Selector */}
+        {/* Tab Controls */}
         <div style={{
           display: 'flex',
-          alignItems: 'center',
           justifyContent: 'center',
-          background: 'rgba(16, 25, 42, 0.9)',
-          padding: '0.5rem',
-          borderRadius: '16px',
+          gap: '0.5rem',
           maxWidth: '680px',
-          margin: '0 auto 2.5rem',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
+          margin: '0 auto 3rem',
+          background: 'var(--bg-surface)',
+          padding: '0.4rem',
+          borderRadius: 'var(--radius-sm)',
+          border: '1px solid var(--border-subtle)'
         }}>
           <button
             onClick={() => setActiveTab('spread')}
             style={{
               flex: 1,
-              padding: '0.85rem 1rem',
-              borderRadius: '12px',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-xs)',
               border: 'none',
-              background: activeTab === 'spread' ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)' : 'transparent',
-              color: activeTab === 'spread' ? '#FFFFFF' : '#94A3B8',
+              background: activeTab === 'spread' ? 'var(--gold-primary)' : 'transparent',
+              color: activeTab === 'spread' ? '#0A0D14' : 'var(--text-body)',
               fontWeight: 700,
-              fontSize: '0.9rem',
+              fontSize: '0.82rem',
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.25s'
+              transition: 'var(--transition-slow)'
             }}
           >
-            <Coins size={16} />
-            1. Ponta do Spread
+            I. Ponta do Spread &amp; Liquidez
           </button>
 
           <button
             onClick={() => setActiveTab('synergy')}
             style={{
               flex: 1,
-              padding: '0.85rem 1rem',
-              borderRadius: '12px',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-xs)',
               border: 'none',
-              background: activeTab === 'synergy' ? 'linear-gradient(135deg, #D4AF37 0%, #9E741B 100%)' : 'transparent',
-              color: activeTab === 'synergy' ? '#090E17' : '#94A3B8',
+              background: activeTab === 'synergy' ? 'var(--gold-primary)' : 'transparent',
+              color: activeTab === 'synergy' ? '#0A0D14' : 'var(--text-body)',
               fontWeight: 700,
-              fontSize: '0.9rem',
+              fontSize: '0.82rem',
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.25s'
+              transition: 'var(--transition-slow)'
             }}
           >
-            <Sparkles size={16} />
-            ★ A Sinergia Híbrida
+            ★ O Elo de Sinergia
           </button>
 
           <button
             onClick={() => setActiveTab('consultoria')}
             style={{
               flex: 1,
-              padding: '0.85rem 1rem',
-              borderRadius: '12px',
+              padding: '0.75rem 1rem',
+              borderRadius: 'var(--radius-xs)',
               border: 'none',
-              background: activeTab === 'consultoria' ? 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)' : 'transparent',
-              color: activeTab === 'consultoria' ? '#FFFFFF' : '#94A3B8',
+              background: activeTab === 'consultoria' ? 'var(--gold-primary)' : 'transparent',
+              color: activeTab === 'consultoria' ? '#0A0D14' : 'var(--text-body)',
               fontWeight: 700,
-              fontSize: '0.9rem',
+              fontSize: '0.82rem',
+              letterSpacing: '0.03em',
+              textTransform: 'uppercase',
               cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.5rem',
-              transition: 'all 0.25s'
+              transition: 'var(--transition-slow)'
             }}
           >
-            <ShieldCheck size={16} />
-            2. Ponta da Consultoria
+            II. Ponta da Consultoria &amp; Gestão
           </button>
         </div>
 
-        {/* Tab 1: Spread Content */}
+        {/* Tab 1: Spread */}
         {activeTab === 'spread' && (
-          <div className="glass-panel" style={{ padding: '2.5rem', borderLeft: '4px solid #10B981', animation: 'fadeIn 0.3s' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div className="advisory-card-active" style={{ animation: 'fadeIn 0.3s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.5rem' }}>
               <div>
-                <span className="badge-emerald">{SPECTRUM_COMPARISON.spread.tag}</span>
-                <h3 style={{ fontSize: '1.8rem', marginTop: '0.5rem' }}>{SPECTRUM_COMPARISON.spread.title}</h3>
+                <span className="badge-outline">MERCADO DE CAPITAIS &amp; LIQUIDEZ</span>
+                <h3 style={{ fontSize: '1.6rem', marginTop: '0.5rem', color: '#FFFFFF' }}>
+                  {ADVISORY_PRACTICES.spread.title}
+                </h3>
+                <p style={{ color: '#CBD5E1', fontSize: '0.95rem', marginTop: '0.3rem', maxWidth: '750px' }}>
+                  {ADVISORY_PRACTICES.spread.lead}
+                </p>
               </div>
-              <button className="btn-secondary" onClick={onNavigateToSimulator}>
-                Calcular Meu Spread Atual <ArrowRight size={16} />
+
+              <button className="btn-secondary-subtle" onClick={onNavigateToSimulator}>
+                Simular Economia de Spread
+                <ArrowRight size={14} />
               </button>
             </div>
 
-            <p style={{ fontSize: '1.05rem', color: '#CBD5E1', marginBottom: '2rem', maxWidth: '900px' }}>
-              {SPECTRUM_COMPARISON.spread.description}
+            <p style={{ color: '#94A3B8', fontSize: '0.92rem', lineHeight: 1.65, marginBottom: '2rem' }}>
+              {ADVISORY_PRACTICES.spread.overview}
             </p>
 
-            {/* Metrics */}
-            <div className="grid-cols-4" style={{ gap: '1rem', marginBottom: '2.5rem' }}>
-              {SPECTRUM_COMPARISON.spread.metrics.map((m, idx) => (
-                <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', textTransform: 'uppercase' }}>{m.label}</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#34D399', marginTop: '0.3rem' }}>{m.value}</div>
+            {/* Indicators */}
+            <div className="grid-3" style={{ marginBottom: '2rem' }}>
+              {ADVISORY_PRACTICES.spread.indicators.map((ind, idx) => (
+                <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.2rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{ind.label}</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--gold-light)', marginTop: '0.3rem' }}>{ind.value}</div>
                 </div>
               ))}
             </div>
 
-            {/* Features list */}
-            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '1.8rem', borderRadius: '14px' }}>
-              <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#FFFFFF' }}>Capacidades Operacionais na Ponta do Spread:</h4>
-              <div className="grid-cols-2" style={{ gap: '0.8rem' }}>
-                {SPECTRUM_COMPARISON.spread.features.map((feat, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.92rem' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(16, 185, 129, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34D399', flexShrink: 0 }}>
-                      <Check size={14} />
+            {/* Capabilities */}
+            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#FFFFFF', marginBottom: '1rem' }}>
+                Capacidades de Execução na Ponta do Spread:
+              </div>
+              <div className="grid-2">
+                {ADVISORY_PRACTICES.spread.capabilities.map((cap, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
+                    <div style={{ color: 'var(--gold-primary)', marginTop: '2px', flexShrink: 0 }}>
+                      <Check size={16} />
                     </div>
-                    <span>{feat}</span>
+                    <div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#FFFFFF' }}>{cap.title}</div>
+                      <div style={{ fontSize: '0.86rem', color: '#94A3B8', marginTop: '0.2rem' }}>{cap.description}</div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
+
           </div>
         )}
 
-        {/* Tab 2: Synergy (The Core) */}
+        {/* Tab 2: Synergy */}
         {activeTab === 'synergy' && (
-          <div className="glass-panel-gold" style={{ padding: '2.5rem', animation: 'fadeIn 0.3s' }}>
-            <div style={{ textAlign: 'center', maxWidth: '800px', margin: '0 auto 2.5rem' }}>
-              <span className="badge-gold">O EFEITO MULTIPLICADOR MOURATO</span>
-              <h3 style={{ fontSize: '1.9rem', marginTop: '0.6rem', color: '#FFFFFF' }}>
-                Por que a União de Spread + Consultoria é Insuperável?
+          <div className="advisory-card-active" style={{ animation: 'fadeIn 0.3s' }}>
+            <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 2.5rem' }}>
+              <span className="badge-institutional">O EFEITO MULTIPLICADOR MOURATO</span>
+              <h3 style={{ fontSize: '1.7rem', marginTop: '0.5rem', color: '#FFFFFF' }}>
+                {ADVISORY_PRACTICES.synergy.title}
               </h3>
-              <p style={{ color: '#CBD5E1', fontSize: '1rem', marginTop: '0.5rem' }}>
-                {SPECTRUM_COMPARISON.synergy.description}
+              <p style={{ color: '#CBD5E1', fontSize: '0.95rem', marginTop: '0.4rem' }}>
+                {ADVISORY_PRACTICES.synergy.lead}
               </p>
             </div>
 
-            {/* 4-Step Virtuous Cycle */}
-            <div className="grid-cols-4" style={{ gap: '1.25rem', marginBottom: '2.5rem' }}>
-              {SPECTRUM_COMPARISON.synergy.flow.map((item) => (
+            {/* 4 Steps */}
+            <div className="grid-4" style={{ marginBottom: '2.5rem' }}>
+              {ADVISORY_PRACTICES.synergy.steps.map((st) => (
                 <div 
-                  key={item.step} 
+                  key={st.phase}
                   style={{
-                    background: 'rgba(15, 23, 42, 0.8)',
+                    background: 'rgba(255, 255, 255, 0.02)',
+                    border: '1px solid var(--border-subtle)',
+                    borderRadius: 'var(--radius-xs)',
                     padding: '1.5rem',
-                    borderRadius: '16px',
-                    border: '1px solid rgba(212, 175, 55, 0.25)',
                     position: 'relative'
                   }}
                 >
                   <div style={{
-                    width: 36,
-                    height: 36,
-                    borderRadius: '50%',
-                    background: 'var(--gold-gradient)',
-                    color: '#060911',
+                    fontSize: '0.8rem',
                     fontWeight: 800,
-                    fontSize: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    marginBottom: '1rem',
-                    boxShadow: '0 0 15px rgba(212, 175, 55, 0.4)'
+                    color: 'var(--gold-primary)',
+                    fontFamily: 'var(--font-serif)',
+                    marginBottom: '0.6rem'
                   }}>
-                    {item.step}
+                    ETAPA {st.phase}
                   </div>
-                  <h4 style={{ fontSize: '1.1rem', marginBottom: '0.6rem', color: '#F8FAFC' }}>
-                    {item.title}
-                  </h4>
-                  <p style={{ fontSize: '0.88rem', color: '#94A3B8', lineHeight: 1.55 }}>
-                    {item.desc}
-                  </p>
+                  <div style={{ fontSize: '1rem', fontWeight: 700, color: '#FFFFFF', marginBottom: '0.5rem' }}>
+                    {st.name}
+                  </div>
+                  <div style={{ fontSize: '0.85rem', color: '#94A3B8', lineHeight: 1.55 }}>
+                    {st.desc}
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* Practical Synthesis Banner */}
+            {/* Bottom Callout */}
             <div style={{
-              background: 'linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, rgba(59, 130, 246, 0.15) 100%)',
-              border: '1px solid rgba(212, 175, 55, 0.35)',
+              background: 'rgba(197, 168, 105, 0.05)',
+              border: '1px solid var(--gold-border)',
+              borderRadius: 'var(--radius-xs)',
               padding: '1.5rem 2rem',
-              borderRadius: '16px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               flexWrap: 'wrap',
-              gap: '1.5rem'
+              gap: '1.25rem'
             }}>
               <div>
-                <div style={{ fontSize: '1.15rem', fontWeight: 700, color: '#F8FAFC' }}>
-                  Quer saber se a sua empresa precisa de Spread, Consultoria ou da Solução Integrada?
+                <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#FFFFFF' }}>
+                  A sua empresa demanda liquidez imediata, reorganização societária ou ambas?
                 </div>
-                <div style={{ fontSize: '0.9rem', color: '#94A3B8', marginTop: '0.2rem' }}>
-                  Nossos sócios e especialistas analisam seu balanço e contratos vigentes sem custo inicial.
+                <div style={{ fontSize: '0.86rem', color: '#94A3B8', marginTop: '0.2rem' }}>
+                  Avaliamos sua estrutura de capital e balanço sob estrito acordo de confidencialidade.
                 </div>
               </div>
 
-              <button className="btn-gold" onClick={onOpenOnboarding}>
-                Agendar Diagnóstico Gratuito
-                <ArrowRight size={16} />
+              <button className="btn-primary-gold" onClick={onOpenContact}>
+                Solicitar Diagnóstico Preliminar
+                <ArrowRight size={14} />
               </button>
             </div>
+
           </div>
         )}
 
-        {/* Tab 3: Consultoria Content */}
+        {/* Tab 3: Consultoria */}
         {activeTab === 'consultoria' && (
-          <div className="glass-panel" style={{ padding: '2.5rem', borderLeft: '4px solid #3B82F6', animation: 'fadeIn 0.3s' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+          <div className="advisory-card-active" style={{ animation: 'fadeIn 0.3s' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '1.5rem' }}>
               <div>
-                <span className="badge-blue">{SPECTRUM_COMPARISON.consultoria.tag}</span>
-                <h3 style={{ fontSize: '1.8rem', marginTop: '0.5rem' }}>{SPECTRUM_COMPARISON.consultoria.title}</h3>
+                <span className="badge-outline">GOVERNANÇA &amp; ESTRUTURAÇÃO CORPORATIVA</span>
+                <h3 style={{ fontSize: '1.6rem', marginTop: '0.5rem', color: '#FFFFFF' }}>
+                  {ADVISORY_PRACTICES.consultoria.title}
+                </h3>
+                <p style={{ color: '#CBD5E1', fontSize: '0.95rem', marginTop: '0.3rem', maxWidth: '750px' }}>
+                  {ADVISORY_PRACTICES.consultoria.lead}
+                </p>
               </div>
-              <button className="btn-secondary" onClick={onOpenOnboarding}>
-                Falar com Especialista Societário <ArrowRight size={16} />
+
+              <button className="btn-secondary-subtle" onClick={onOpenContact}>
+                Falar com Sócio de Prática
+                <ArrowRight size={14} />
               </button>
             </div>
 
-            <p style={{ fontSize: '1.05rem', color: '#CBD5E1', marginBottom: '2rem', maxWidth: '900px' }}>
-              {SPECTRUM_COMPARISON.consultoria.description}
+            <p style={{ color: '#94A3B8', fontSize: '0.92rem', lineHeight: 1.65, marginBottom: '2rem' }}>
+              {ADVISORY_PRACTICES.consultoria.overview}
             </p>
 
-            {/* Metrics */}
-            <div className="grid-cols-4" style={{ gap: '1rem', marginBottom: '2.5rem' }}>
-              {SPECTRUM_COMPARISON.consultoria.metrics.map((m, idx) => (
-                <div key={idx} style={{ background: 'rgba(255,255,255,0.03)', padding: '1.2rem', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
-                  <div style={{ fontSize: '0.8rem', color: '#94A3B8', textTransform: 'uppercase' }}>{m.label}</div>
-                  <div style={{ fontSize: '1.4rem', fontWeight: 800, color: '#60A5FA', marginTop: '0.3rem' }}>{m.value}</div>
+            {/* Indicators */}
+            <div className="grid-3" style={{ marginBottom: '2rem' }}>
+              {ADVISORY_PRACTICES.consultoria.indicators.map((ind, idx) => (
+                <div key={idx} style={{ background: 'rgba(255,255,255,0.02)', padding: '1.2rem', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{ind.label}</div>
+                  <div style={{ fontSize: '1.3rem', fontWeight: 700, color: 'var(--gold-light)', marginTop: '0.3rem' }}>{ind.value}</div>
                 </div>
               ))}
             </div>
 
-            {/* Features list */}
-            <div style={{ background: 'rgba(0,0,0,0.25)', padding: '1.8rem', borderRadius: '14px' }}>
-              <h4 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#FFFFFF' }}>Capacidades Estruturais na Ponta da Consultoria:</h4>
-              <div className="grid-cols-2" style={{ gap: '0.8rem' }}>
-                {SPECTRUM_COMPARISON.consultoria.features.map((feat, idx) => (
-                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.92rem' }}>
-                    <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'rgba(59, 130, 246, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60A5FA', flexShrink: 0 }}>
-                      <Check size={14} />
+            {/* Capabilities */}
+            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: '1.5rem' }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#FFFFFF', marginBottom: '1rem' }}>
+                Capacidades de Execução na Ponta da Consultoria:
+              </div>
+              <div className="grid-2">
+                {ADVISORY_PRACTICES.consultoria.capabilities.map((cap, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start' }}>
+                    <div style={{ color: 'var(--gold-primary)', marginTop: '2px', flexShrink: 0 }}>
+                      <Check size={16} />
                     </div>
-                    <span>{feat}</span>
+                    <div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#FFFFFF' }}>{cap.title}</div>
+                      <div style={{ fontSize: '0.86rem', color: '#94A3B8', marginTop: '0.2rem' }}>{cap.description}</div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
+
           </div>
         )}
 
