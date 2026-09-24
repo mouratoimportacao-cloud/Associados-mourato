@@ -1,57 +1,57 @@
 import React from 'react';
-import { COMPANY_DATA } from '../data/companyData';
 import { ArrowUpRight } from 'lucide-react';
 
 export const Footer = ({ onNavigate, onOpenContact }) => {
   return (
     <footer style={{
-      background: '#07090E',
+      background: '#05070B',
       borderTop: '1px solid var(--border-subtle)',
-      padding: '4.5rem 0 2rem'
+      padding: '4.5rem 0 2.5rem'
     }}>
       <div className="container-xl">
         
         {/* Main Grid */}
         <div className="grid-4" style={{ gap: '2.5rem', marginBottom: '3.5rem' }}>
           
-          {/* Col 1: Brand & Logo */}
+          {/* Col 1: Brand & Medallion */}
           <div style={{ gridColumn: 'span 1' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
               <img 
-                src="/mourato-logo-transp.png" 
+                src="/mourato-seal-circle.png" 
                 alt="Mourato & Associados" 
                 style={{ 
-                  height: '64px', 
-                  width: 'auto', 
+                  height: '62px', 
+                  width: '62px', 
                   objectFit: 'contain',
-                  filter: 'drop-shadow(0 2px 10px rgba(197, 168, 105, 0.3))'
+                  borderRadius: '50%',
+                  boxShadow: '0 4px 16px rgba(0, 0, 0, 0.6), 0 0 12px rgba(197, 168, 105, 0.25)'
                 }} 
               />
               <div>
-                <div style={{ fontFamily: "var(--font-serif)", fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF' }}>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', letterSpacing: '0.06em' }}>
                   MOURATO &amp; ASSOCIADOS
                 </div>
-                <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--gold-light)' }}>
-                  Corporate Advisory
+                <div style={{ fontSize: '0.64rem', textTransform: 'uppercase', letterSpacing: '0.14em', color: 'var(--gold-light)' }}>
+                  QUALIDADE • CONFIANÇA • EXCELÊNCIA
                 </div>
               </div>
             </div>
 
-            <p style={{ fontSize: '0.86rem', color: '#94A3B8', lineHeight: 1.6, marginBottom: '1.2rem' }}>
-              Boutique independente de inteligência financeira e corporativa, especializada na convergência entre mercado de capitais, desintermediação de spread bancário e governança consultiva.
+            <p style={{ fontSize: '0.85rem', color: '#8E9BAE', lineHeight: 1.65, marginBottom: '1.2rem' }}>
+              Boutique independente de inteligência financeira e corporativa. Atuação reservada na convergência entre mercado de capitais, desintermediação de spread bancário e governança de sócios.
             </p>
 
-            <div style={{ fontSize: '0.78rem', color: '#CBD5E1' }}>
-              CNPJ: {COMPANY_DATA.cnpj} • {COMPANY_DATA.localizacao}
+            <div style={{ fontSize: '0.76rem', color: '#CBD5E1', letterSpacing: '0.04em' }}>
+              CNPJ: 38.377.738/0001-45 • SÃO PAULO - SP
             </div>
           </div>
 
           {/* Col 2: Práticas */}
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
-              Práticas
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
+              Mercado de Capitais
             </div>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.86rem' }}>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.86rem' }}>
               <li>
                 <button 
                   onClick={() => onNavigate('spread')}
@@ -69,7 +69,7 @@ export const Footer = ({ onNavigate, onOpenContact }) => {
                   onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
                   onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
                 >
-                  Antecipação &amp; FIDCs
+                  Antecipação &amp; FIDCs de Atacado
                 </button>
               </li>
               <li>
@@ -79,7 +79,7 @@ export const Footer = ({ onNavigate, onOpenContact }) => {
                   onMouseEnter={(e) => e.target.style.color = 'var(--gold-light)'}
                   onMouseLeave={(e) => e.target.style.color = '#94A3B8'}
                 >
-                  Títulos Privados (CRI, CRA, Debêntures)
+                  Emissões Privadas (CRI, CRA, Debêntures)
                 </button>
               </li>
               <li>
@@ -97,10 +97,10 @@ export const Footer = ({ onNavigate, onOpenContact }) => {
 
           {/* Col 3: Consultoria */}
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
-              Consultoria &amp; Governança
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
+              Consultoria &amp; Societário
             </div>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.6rem', fontSize: '0.86rem' }}>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.86rem' }}>
               <li>
                 <button 
                   onClick={() => onNavigate('consultoria')}
@@ -144,21 +144,21 @@ export const Footer = ({ onNavigate, onOpenContact }) => {
             </ul>
           </div>
 
-          {/* Col 4: Relacionamento */}
+          {/* Col 4: Audiência */}
           <div>
-            <div style={{ fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
-              Atendimento Direto
+            <div style={{ fontSize: '0.78rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#FFFFFF', marginBottom: '1.2rem' }}>
+              Audiência Privada
             </div>
-            <p style={{ fontSize: '0.86rem', color: '#94A3B8', lineHeight: 1.6, marginBottom: '1.2rem' }}>
-              Mandatos conduzidos com sigilo estrito e governança de dados garantida por acordo de confidencialidade.
+            <p style={{ fontSize: '0.85rem', color: '#8E9BAE', lineHeight: 1.6, marginBottom: '1.2rem' }}>
+              Atendimento exclusivo para conselhos de administração, fundadores e CFOs sob protocolo estrito de não divulgação (NDA).
             </p>
             <button 
               className="btn-primary-gold" 
               onClick={onOpenContact}
-              style={{ padding: '0.65rem 1.25rem', fontSize: '0.8rem', width: '100%' }}
+              style={{ padding: '0.7rem 1.25rem', fontSize: '0.78rem', width: '100%' }}
             >
-              Falar com a Diretoria
-              <ArrowUpRight size={14} />
+              Solicitar Contato Reservado
+              <ArrowUpRight size={13} />
             </button>
           </div>
 
@@ -167,17 +167,17 @@ export const Footer = ({ onNavigate, onOpenContact }) => {
         {/* Bottom Legal Bar */}
         <div style={{
           borderTop: '1px solid var(--border-subtle)',
-          paddingTop: '1.5rem',
+          paddingTop: '1.75rem',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
           gap: '1rem',
-          fontSize: '0.76rem',
+          fontSize: '0.75rem',
           color: '#64748B'
         }}>
           <div>
-            © {new Date().getFullYear()} Mourato e Associados Ltda. Todos os direitos reservados. CNPJ: {COMPANY_DATA.cnpj}.
+            © {new Date().getFullYear()} Mourato e Associados Ltda. Todos os direitos reservados. CNPJ: 38.377.738/0001-45.
           </div>
           <div>
             São Paulo - SP • Atendimento Corporativo em Todo o Território Nacional.
