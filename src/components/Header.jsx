@@ -38,31 +38,34 @@ export const Header = ({ onNavigate, onOpenContact }) => {
         {/* Brand Logo & Wordmark */}
         <div 
           onClick={() => onNavigate('hero')}
-          style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', cursor: 'pointer' }}
         >
           <img 
             src="/mourato-logo-transp.png" 
             alt="Mourato & Associados" 
             style={{ 
-              height: '48px', 
+              height: '62px', 
               width: 'auto', 
               objectFit: 'contain',
-              filter: 'drop-shadow(0 2px 8px rgba(197, 168, 105, 0.2))'
+              filter: 'drop-shadow(0 4px 14px rgba(197, 168, 105, 0.4))',
+              transition: 'transform 0.3s ease'
             }} 
+            onMouseEnter={(e) => e.target.style.transform = 'scale(1.05)'}
+            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
           />
           <div>
             <div style={{
               fontFamily: "var(--font-serif)",
-              fontSize: '1.25rem',
+              fontSize: '1.35rem',
               fontWeight: 800,
-              letterSpacing: '0.06em',
+              letterSpacing: '0.07em',
               color: '#FFFFFF'
             }}>
               MOURATO <span style={{ color: 'var(--gold-primary)', fontWeight: 600 }}>&amp;</span> ASSOCIADOS
             </div>
             <div style={{
-              fontSize: '0.66rem',
-              letterSpacing: '0.14em',
+              fontSize: '0.7rem',
+              letterSpacing: '0.16em',
               textTransform: 'uppercase',
               color: 'var(--gold-light)',
               fontWeight: 600,

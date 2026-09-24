@@ -16,17 +16,22 @@ export const Footer = ({ onNavigate, onOpenContact }) => {
           
           {/* Col 1: Brand & Logo */}
           <div style={{ gridColumn: 'span 1' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', marginBottom: '1.2rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
               <img 
                 src="/mourato-logo-transp.png" 
                 alt="Mourato & Associados" 
-                style={{ height: '44px', width: 'auto', objectFit: 'contain' }} 
+                style={{ 
+                  height: '64px', 
+                  width: 'auto', 
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 2px 10px rgba(197, 168, 105, 0.3))'
+                }} 
               />
               <div>
-                <div style={{ fontFamily: "var(--font-serif)", fontSize: '1.1rem', fontWeight: 800, color: '#FFFFFF' }}>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: '1.2rem', fontWeight: 800, color: '#FFFFFF' }}>
                   MOURATO &amp; ASSOCIADOS
                 </div>
-                <div style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--gold-light)' }}>
+                <div style={{ fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.12em', color: 'var(--gold-light)' }}>
                   Corporate Advisory
                 </div>
               </div>

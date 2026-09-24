@@ -13,17 +13,38 @@ export const HeroSection = ({ onNavigate, onOpenContact }) => {
       <div className="container-xl">
         <div style={{ maxWidth: '880px', margin: '0 auto', textAlign: 'center' }}>
           
-          {/* Official Emblem Mark */}
-          <div style={{ marginBottom: '2rem', display: 'inline-block' }}>
+          {/* Official Emblem Mark - Centerpiece Display */}
+          <div style={{
+            marginBottom: '2.5rem',
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            position: 'relative',
+            padding: '1rem 2.5rem'
+          }}>
+            {/* Luminous Glow Backdrop */}
+            <div style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'radial-gradient(ellipse at center, rgba(197, 168, 105, 0.18) 0%, rgba(197, 168, 105, 0.03) 60%, transparent 80%)',
+              filter: 'blur(16px)',
+              pointerEvents: 'none'
+            }} />
+
             <img 
               src="/mourato-logo-transp.png" 
               alt="Mourato & Associados" 
               style={{ 
-                height: '92px', 
+                height: '145px', 
                 width: 'auto', 
                 objectFit: 'contain',
-                filter: 'drop-shadow(0 4px 18px rgba(197, 168, 105, 0.25))'
+                position: 'relative',
+                zIndex: 1,
+                filter: 'drop-shadow(0 8px 24px rgba(197, 168, 105, 0.45)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.8))',
+                transition: 'transform 0.4s ease'
               }} 
+              onMouseEnter={(e) => e.target.style.transform = 'scale(1.04)'}
+              onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
             />
           </div>
 
