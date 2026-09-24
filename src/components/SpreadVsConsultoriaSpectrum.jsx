@@ -18,7 +18,7 @@ export const SpreadVsConsultoriaSpectrum = ({ onNavigateToSimulator, onOpenConta
             Da Engenharia de Spread à Consultoria Empresarial
           </h2>
           <p style={{ color: '#94A3B8', fontSize: '1.02rem', lineHeight: 1.65 }}>
-            A Mourato &amp; Associados rejeita o modelo fragmentado. Não atuamos como meros intermediadores de empréstimos caros nem como consultorias acadêmicas distantes da liquidez. Integramos o <strong>corte de spread bancário</strong> com a <strong>organização societária e contábil de longo prazo</strong>.
+            Rejeitamos o modelo fragmentado. Não atuamos como meros intermediadores de empréstimos caros nem como consultorias acadêmicas distantes da liquidez. Integramos o <strong>corte de spread bancário</strong> com a <strong>organização societária e contábil de longo prazo</strong>.
           </p>
         </div>
 
@@ -156,7 +156,7 @@ export const SpreadVsConsultoriaSpectrum = ({ onNavigateToSimulator, onOpenConta
         {activeTab === 'synergy' && (
           <div className="advisory-card-active" style={{ animation: 'fadeIn 0.3s' }}>
             <div style={{ textAlign: 'center', maxWidth: '780px', margin: '0 auto 2.5rem' }}>
-              <span className="badge-institutional">O EFEITO MULTIPLICADOR MOURATO</span>
+              <span className="badge-institutional">O EFEITO MULTIPLICADOR DA SINERGIA</span>
               <h3 style={{ fontSize: '1.7rem', marginTop: '0.5rem', color: '#FFFFFF' }}>
                 {ADVISORY_PRACTICES.synergy.title}
               </h3>

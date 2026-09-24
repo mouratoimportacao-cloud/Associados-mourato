@@ -41,8 +41,8 @@ export const Footer = ({ onNavigate, onOpenContact }) => {
               Boutique independente de inteligência financeira e corporativa. Atuação reservada na convergência entre mercado de capitais, desintermediação de spread bancário e governança de sócios.
             </p>
 
-            <div style={{ fontSize: '0.76rem', color: '#CBD5E1', letterSpacing: '0.04em' }}>
-              CNPJ: 38.377.738/0001-45 • SÃO PAULO - SP
+            <div style={{ fontSize: '0.76rem', color: '#8E9BAE', letterSpacing: '0.04em' }}>
+              SÃO PAULO — ATUAÇÃO NACIONAL
             </div>
           </div>
 

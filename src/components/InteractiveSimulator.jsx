@@ -103,7 +103,7 @@ export const InteractiveSimulator = ({ onOpenContact }) => {
             <div style={{ marginBottom: '1.8rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                 <label style={{ fontSize: '0.85rem', color: 'var(--text-subtle)', fontWeight: 600 }}>
-                  Spread Estimado Mourato &amp; Associados (Atacado):
+                  Spread Estruturado em Mesa de Atacado:
                 </label>
                 <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--gold-light)' }}>
                   +{mouratoSpread}% a.a.

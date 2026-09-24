@@ -1,7 +1,7 @@
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 
-export const Header = ({ onNavigate, onOpenContact }) => {
+export const Header = ({ onNavigate, onOpenContact, onOpenLogin }) => {
   return (
     <header className="header-institutional">
       {/* Discreet Institutional Top Line */}
@@ -95,8 +95,16 @@ export const Header = ({ onNavigate, onOpenContact }) => {
           </button>
         </nav>
 
-        {/* Action Button */}
-        <div>
+        {/* Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+          <button 
+            className="btn-secondary-subtle" 
+            onClick={onOpenLogin}
+            style={{ padding: '0.65rem 1.1rem', fontSize: '0.78rem', gap: '0.4rem' }}
+          >
+            Acesso Restrito
+          </button>
+
           <button 
             className="btn-primary-gold" 
             onClick={onOpenContact}

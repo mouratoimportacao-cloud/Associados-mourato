@@ -7,11 +7,13 @@ import { ConsultingModule } from './components/ConsultingModule';
 import { InteractiveSimulator } from './components/InteractiveSimulator';
 import { GovernanceCompliance } from './components/GovernanceCompliance';
 import { AdvisoryOnboardingModal } from './components/AdvisoryOnboardingModal';
+import { ClientManagementModal } from './components/ClientManagementModal';
 import { Footer } from './components/Footer';
 import { ArrowUpRight } from 'lucide-react';
 
 export function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
 
   const handleNavigate = (sectionId) => {
     const el = document.getElementById(sectionId);
@@ -29,6 +31,7 @@ export function App() {
       <Header 
         onNavigate={handleNavigate}
         onOpenContact={() => setIsContactOpen(true)}
+        onOpenLogin={() => setIsClientModalOpen(true)}
       />
 
       <main style={{ flex: 1 }}>
@@ -62,7 +65,7 @@ export function App() {
           onOpenContact={() => setIsContactOpen(true)}
         />
 
-        {/* Governance & Compliance (Strictly Confidential, No Sensitive Contract Disclosures) */}
+        {/* Governance & Compliance */}
         <GovernanceCompliance />
 
         {/* Bottom Call to Action */}
@@ -101,10 +104,16 @@ export function App() {
         onOpenContact={() => setIsContactOpen(true)}
       />
 
-      {/* Modal de Agendamento */}
+      {/* Modal de Agendamento Executivo */}
       <AdvisoryOnboardingModal 
         isOpen={isContactOpen}
         onClose={() => setIsContactOpen(false)}
+      />
+
+      {/* Portal de Gestão de Clientes & Contas (Acesso Restrito / Login) */}
+      <ClientManagementModal 
+        isOpen={isClientModalOpen}
+        onClose={() => setIsClientModalOpen(false)}
       />
 
     </div>

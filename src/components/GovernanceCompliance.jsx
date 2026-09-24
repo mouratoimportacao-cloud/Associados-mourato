@@ -35,12 +35,12 @@ export const GovernanceCompliance = () => {
             Governança, Compliance &amp; Padrões de Confidencialidade
           </h2>
           <p style={{ color: '#94A3B8', fontSize: '1rem', lineHeight: 1.65 }}>
-            A confiança é o pilar fundamental da Mourato &amp; Associados. Conduzimos cada mandato com discrição absoluta, governança de dados e compromisso inegociável com a segurança do cliente.
+            A discrição e a integridade técnica são os pilares fundamentais da nossa atuação. Conduzimos cada mandato com governança estrita e compromisso inegociável com a confidencialidade do cliente.
           </p>
         </div>
 
         {/* 4 Cards Grid */}
-        <div className="grid-2" style={{ gap: '1.75rem', marginBottom: '3rem' }}>
+        <div className="grid-2" style={{ gap: '1.75rem' }}>
           {principles.map((pr, idx) => (
             <div key={idx} className="advisory-card">
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.8rem' }}>
@@ -52,31 +52,6 @@ export const GovernanceCompliance = () => {
               </p>
             </div>
           ))}
-        </div>
-
-        {/* Legal Identity Strip */}
-        <div style={{
-          background: 'rgba(255, 255, 255, 0.02)',
-          border: '1px solid var(--border-subtle)',
-          borderRadius: 'var(--radius-xs)',
-          padding: '1.5rem 2rem',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          fontSize: '0.86rem',
-          color: '#94A3B8'
-        }}>
-          <div>
-            <strong style={{ color: '#FFFFFF' }}>Identificação Corporativa:</strong> {COMPANY_DATA.razaoSocial}
-          </div>
-          <div>
-            <strong style={{ color: '#FFFFFF' }}>CNPJ:</strong> {COMPANY_DATA.cnpj}
-          </div>
-          <div>
-            <strong style={{ color: '#FFFFFF' }}>Sede:</strong> {COMPANY_DATA.localizacao}
-          </div>
         </div>
 
       </div>

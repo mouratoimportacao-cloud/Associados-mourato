@@ -52,7 +52,7 @@ export const HeroSection = ({ onNavigate, onOpenContact }) => {
           {/* Discreet Exclusivity Tag */}
           <div style={{ display: 'block', marginBottom: '1.25rem' }}>
             <span className="badge-institutional">
-              ASSESSORIA RESERVADA • BY APPOINTMENT ONLY • CNPJ 38.377.738/0001-45
+              MANDATOS RESERVADOS • BY APPOINTMENT ONLY
             </span>
           </div>
 
@@ -70,7 +70,7 @@ export const HeroSection = ({ onNavigate, onOpenContact }) => {
             maxWidth: '780px',
             margin: '0 auto 2.5rem'
           }}>
-            Assessoria boutique independente para companhias, grandes grupos econômicos e acionistas. Desintermediamos o acesso ao capital de atacado para reduzir agressivamente seu custo financeiro, integrando a operação com blindagem de governança, contabilidade e reorganização societária.
+            Assessoria boutique independente para companhias e grandes grupos econômicos. Desintermediamos o acesso ao capital de atacado para reduzir agressivamente o custo financeiro, integrando a operação com blindagem de governança, contabilidade e reorganização societária.
           </p>
 
           {/* CTAs */}
