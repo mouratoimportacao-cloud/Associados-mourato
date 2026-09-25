@@ -100,9 +100,9 @@ export const Header = ({ onNavigate, onOpenContact, onOpenLogin }) => {
           <button 
             className="btn-secondary-subtle" 
             onClick={onOpenLogin}
-            style={{ padding: '0.65rem 1.1rem', fontSize: '0.78rem', gap: '0.4rem' }}
+            style={{ padding: '0.65rem 1.1rem', fontSize: '0.78rem', gap: '0.4rem', display: 'flex', alignItems: 'center' }}
           >
-            Acesso Restrito
+            Login
           </button>
 
           <button 
