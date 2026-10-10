@@ -38,9 +38,16 @@ import {
   Menu,
   Shield,
   Send,
-  Sparkles
+  Sparkles,
+  Briefcase,
+  TrendingUp,
+  Award,
+  FileCheck,
+  FileSpreadsheet,
+  Car
 } from 'lucide-react';
 import { createPixCharge, createCheckoutProPreference, validateAntifraudPayer } from '../services/mercadoPagoService';
+import { TEIA_INITIAL_CLIENTS } from '../data/teiaDatabase';
 
 const STORAGE_CLIENTS_KEY = 'mourato_clients_records_v2';
 const STORAGE_EXPENSES_KEY = 'mourato_corporate_expenses_v1';
@@ -104,16 +111,27 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
   const [showFormPasswords, setShowFormPasswords] = useState({});
   const [showDetailPasswords, setShowDetailPasswords] = useState({});
 
-  // 1. Clients Database State (Clean, empty by default)
+  // 1. Clients Database State (Carregamento Híbrido: Base Teia + LocalStorage)
   const [clients, setClients] = useState(() => {
     try {
       const saved = localStorage.getItem(STORAGE_CLIENTS_KEY);
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          // Assegura que todos os clientes da base Teia estejam disponíveis
+          const savedDocs = new Set(parsed.map(c => (c.documento || '').replace(/\D/g, '')));
+          const teiaComplement = TEIA_INITIAL_CLIENTS.filter(t => !savedDocs.has((t.documento || '').replace(/\D/g, '')));
+          return [...parsed, ...teiaComplement];
+        }
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Erro ao recuperar clientes do storage:', e);
     }
-    return [];
+    return TEIA_INITIAL_CLIENTS;
   });
+
+  // Filtro de clientes: todos, empresas PJ ou sócios PF
+  const [clientTypeFilter, setClientTypeFilter] = useState('todos');
 
   // 2. Corporate Expenses State
   const [expenses, setExpenses] = useState(() => {
@@ -170,29 +188,57 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
   const [copiedPixId, setCopiedPixId] = useState(null);
   const [activePixModal, setActivePixModal] = useState(null);
 
-  // New Client Form State
+  // New Client Form State (Suporte completo a PJ e PF)
   const [newClient, setNewClient] = useState({
+    tipo: 'PJ', // 'PJ' | 'PF'
     nomeRazao: '',
     documento: '',
+    documentoTipo: 'CNPJ',
     responsavel: '',
+    natureza: '',
+    nire: '',
+    socioVinculado: '',
+    empresaVinculada: '',
+    profissao: '',
+    rg: '',
     contato: '',
+    email: '',
+    endereco: '',
+    cep: '',
+    balanco: {
+      exercicio: '2026 (Auditado)',
+      ativo: '',
+      patrimonioLiquido: '',
+      capitalSocial: '',
+      faturamentoAnual: '',
+      contadorResponsavel: ''
+    },
+    rendaPatrimonio: {
+      proLabore: '',
+      bens: '',
+      veiculos: ''
+    },
     contasBancarias: [
       {
         id: 1,
-        banco: 'Itaú',
+        banco: 'Nu Pagamentos',
         bancoOutro: '',
-        agencia: '',
+        agencia: '0001',
         conta: '',
         senhaAcesso: '',
-        statusConta: 'Em Abertura / Análise'
+        statusConta: 'Aberta e Operando',
+        origemCcs: ''
       }
     ],
-    serasaScore: 'Regular (Sem Restrições)',
+    serasaScore: '885 (Excelente)',
     serasaStatus: 'Sem Apontamentos',
-    govNivel: 'Prata',
-    govProtocolo: '',
-    quodStatus: 'Em Análise',
+    boaVistaScore: '875 (Excelente)',
     boaVistaStatus: 'Sem Restrições',
+    govNivel: 'Ouro',
+    govProtocolo: '',
+    quodStatus: 'Positivo / Sem Restrição',
+    quodScore: '890',
+    bacenScr: 'Rating A1 (Prime Rate)',
     limiteAprovado: '',
     observacoesSigilosas: ''
   });
@@ -329,43 +375,85 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
     setNewClient({ ...newClient, contasBancarias: updated });
   };
 
+  const handleBalancoChange = (field, value) => {
+    setNewClient(prev => ({
+      ...prev,
+      balanco: { ...(prev.balanco || {}), [field]: value }
+    }));
+  };
+
+  const handleRendaPatrimonioChange = (field, value) => {
+    setNewClient(prev => ({
+      ...prev,
+      rendaPatrimonio: { ...(prev.rendaPatrimonio || {}), [field]: value }
+    }));
+  };
+
   // Save Client Handler
   const handleSaveClient = (e) => {
     e.preventDefault();
     if (!newClient.nomeRazao.trim()) {
-      alert('Por favor, informe a Razão Social ou Nome do cliente.');
+      alert(newClient.tipo === 'PJ' ? 'Por favor, informe a Razão Social da empresa.' : 'Por favor, informe o Nome Completo do sócio/pessoa física.');
       return;
     }
     const created = {
       ...newClient,
-      id: `cli-${Date.now()}`,
+      id: `cli-${newClient.tipo.toLowerCase()}-${Date.now()}`,
       dataCadastro: new Date().toISOString().split('T')[0]
     };
     setClients([created, ...clients]);
     setActiveView('clients_list');
     // Reset form
     setNewClient({
+      tipo: newClient.tipo,
       nomeRazao: '',
       documento: '',
+      documentoTipo: newClient.tipo === 'PJ' ? 'CNPJ' : 'CPF',
+      natureza: '',
+      nire: '',
+      socioVinculado: '',
+      empresaVinculada: '',
+      profissao: '',
+      rg: '',
       responsavel: '',
       contato: '',
+      email: '',
+      endereco: '',
+      cep: '',
+      balanco: {
+        exercicio: '2026 (Auditado)',
+        ativo: '',
+        patrimonioLiquido: '',
+        capitalSocial: '',
+        faturamentoAnual: '',
+        contadorResponsavel: ''
+      },
+      rendaPatrimonio: {
+        proLabore: '',
+        bens: '',
+        veiculos: ''
+      },
       contasBancarias: [
         {
           id: 1,
-          banco: 'Itaú',
+          banco: newClient.tipo === 'PJ' ? 'Nu Pagamentos' : 'Itaú',
           bancoOutro: '',
-          agencia: '',
+          agencia: '0001',
           conta: '',
           senhaAcesso: '',
-          statusConta: 'Em Abertura / Análise'
+          statusConta: 'Aberta e Operando',
+          origemCcs: ''
         }
       ],
-      serasaScore: 'Regular (Sem Restrições)',
+      serasaScore: newClient.tipo === 'PJ' ? '885 (Excelente)' : 'Regular (Sem Restrições)',
       serasaStatus: 'Sem Apontamentos',
-      govNivel: 'Prata',
-      govProtocolo: '',
-      quodStatus: 'Em Análise',
+      boaVistaScore: 'Sem Restrições',
       boaVistaStatus: 'Sem Restrições',
+      govNivel: 'Ouro',
+      govProtocolo: '',
+      quodStatus: 'Positivo / Sem Restrição',
+      quodScore: '',
+      bacenScr: 'Rating A1',
       limiteAprovado: '',
       observacoesSigilosas: ''
     });
@@ -677,13 +765,33 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
   const totalRecebido = receivables.filter(r => r.status === 'Pago').reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
   const totalRecebiveisPendentes = receivables.filter(r => r.status === 'Pendente').reduce((acc, curr) => acc + (Number(curr.valor) || 0), 0);
 
-  // Filtered Clients
-  const filteredClients = clients.filter(c => 
-    c.nomeRazao.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.documento.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.responsavel.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.contasBancarias.some(b => b.banco.toLowerCase().includes(searchTerm.toLowerCase()) || b.agencia.includes(searchTerm) || b.conta.includes(searchTerm))
-  );
+  // Contagem de Clientes por Tipo
+  const pjCount = clients.filter(c => c.tipo === 'PJ').length;
+  const pfCount = clients.filter(c => c.tipo === 'PF').length;
+
+  // Filtered Clients (Filtro por Tipo + Busca Textual)
+  const filteredClients = clients.filter(c => {
+    // 1. Filtro por tipo (Todos, PJ ou PF)
+    if (clientTypeFilter !== 'todos' && c.tipo !== clientTypeFilter) {
+      return false;
+    }
+    // 2. Busca textual
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    const nome = (c.nomeRazao || '').toLowerCase();
+    const doc = (c.documento || '').toLowerCase();
+    const resp = (c.responsavel || '').toLowerCase();
+    const socio = (c.socioVinculado || '').toLowerCase();
+    const emp = (c.empresaVinculada || '').toLowerCase();
+    const prof = (c.profissao || '').toLowerCase();
+    const bancos = (c.contasBancarias || []).some(b => 
+      (b.banco || '').toLowerCase().includes(term) || 
+      (b.bancoOutro || '').toLowerCase().includes(term) ||
+      (b.agencia || '').includes(term) || 
+      (b.conta || '').includes(term)
+    );
+    return nome.includes(term) || doc.includes(term) || resp.includes(term) || socio.includes(term) || emp.includes(term) || prof.includes(term) || bancos;
+  });
 
   // ==========================================
   // VIEW: LOGIN SCREEN (when not authenticated)
@@ -1383,39 +1491,120 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
           {/* ======================================================== */}
           {activeView === 'clients_list' && (
             <div>
-              {/* Search & Actions Bar */}
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '1.75rem', flexWrap: 'wrap' }}>
-                <div style={{ position: 'relative', flex: 1, minWidth: '280px', maxWidth: '480px' }}>
+              {/* Header com Filtros Rápidos (Todos, Empresas PJ, Sócios PF) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.75rem' }}>
+                
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' }}>
+                  {/* Abas de Filtro de Categoria */}
+                  <div style={{
+                    display: 'inline-flex',
+                    background: '#0D121D',
+                    padding: '0.3rem',
+                    borderRadius: 'var(--radius-sm)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                    gap: '0.35rem'
+                  }}>
+                    <button
+                      type="button"
+                      onClick={() => setClientTypeFilter('todos')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.5rem 0.9rem',
+                        borderRadius: 'var(--radius-xs)',
+                        background: clientTypeFilter === 'todos' ? 'rgba(197, 168, 105, 0.2)' : 'transparent',
+                        border: clientTypeFilter === 'todos' ? '1px solid var(--gold-border)' : '1px solid transparent',
+                        color: clientTypeFilter === 'todos' ? 'var(--gold-light)' : '#94A3B8',
+                        fontSize: '0.78rem',
+                        fontWeight: clientTypeFilter === 'todos' ? 700 : 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <Users size={14} />
+                      Todos ({clients.length})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setClientTypeFilter('PJ')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.5rem 0.9rem',
+                        borderRadius: 'var(--radius-xs)',
+                        background: clientTypeFilter === 'PJ' ? 'rgba(197, 168, 105, 0.25)' : 'transparent',
+                        border: clientTypeFilter === 'PJ' ? '1px solid var(--gold-primary)' : '1px solid transparent',
+                        color: clientTypeFilter === 'PJ' ? 'var(--gold-light)' : '#94A3B8',
+                        fontSize: '0.78rem',
+                        fontWeight: clientTypeFilter === 'PJ' ? 700 : 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <Building2 size={14} color="var(--gold-primary)" />
+                      🏢 Empresas (PJ) ({pjCount})
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setClientTypeFilter('PF')}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.5rem 0.9rem',
+                        borderRadius: 'var(--radius-xs)',
+                        background: clientTypeFilter === 'PF' ? 'rgba(0, 158, 227, 0.2)' : 'transparent',
+                        border: clientTypeFilter === 'PF' ? '1px solid #00B4FF' : '1px solid transparent',
+                        color: clientTypeFilter === 'PF' ? '#38BDF8' : '#94A3B8',
+                        fontSize: '0.78rem',
+                        fontWeight: clientTypeFilter === 'PF' ? 700 : 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      <UserCheck size={14} color="#00B4FF" />
+                      👤 Sócios (PF) ({pfCount})
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={() => setActiveView('clients_new')}
+                    className="btn-primary-gold"
+                    style={{ padding: '0.65rem 1.3rem', fontSize: '0.82rem', gap: '0.5rem' }}
+                  >
+                    <Plus size={16} />
+                    Cadastrar Novo Cliente
+                  </button>
+                </div>
+
+                {/* Campo de Busca Textual */}
+                <div style={{ position: 'relative', width: '100%', maxWidth: '520px' }}>
                   <Search size={16} color="#64748B" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
                   <input 
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Buscar por Razão Social, CNPJ, Sócio ou Banco..."
+                    placeholder="Buscar por Razão Social, Nome, CNPJ/CPF, Sócio Vinculado ou Banco..."
                     style={{
                       width: '100%',
-                      padding: '0.75rem 1rem 0.75rem 2.6rem',
+                      padding: '0.7rem 1rem 0.7rem 2.6rem',
                       background: '#0D121D',
                       border: '1px solid rgba(255, 255, 255, 0.09)',
                       borderRadius: 'var(--radius-sm)',
                       color: '#FFFFFF',
-                      fontSize: '0.85rem',
+                      fontSize: '0.84rem',
                       outline: 'none'
                     }}
                   />
                 </div>
 
-                <button 
-                  onClick={() => setActiveView('clients_new')}
-                  className="btn-primary-gold"
-                  style={{ padding: '0.75rem 1.4rem', fontSize: '0.82rem', gap: '0.5rem' }}
-                >
-                  <Plus size={16} />
-                  Cadastrar Novo Cliente
-                </button>
               </div>
 
-              {/* Clients Table / Cards */}
+              {/* Grid de Cards de Clientes */}
               {clients.length === 0 ? (
                 <div style={{
                   padding: '4rem 2rem',
@@ -1426,10 +1615,10 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                 }}>
                   <ShieldCheck size={48} color="var(--gold-primary)" style={{ margin: '0 auto 1.25rem', opacity: 0.8 }} />
                   <h3 style={{ color: '#FFFFFF', fontSize: '1.2rem', marginBottom: '0.5rem' }}>
-                    Base de Clientes Limpa e Segura
+                    Nenhum cliente cadastrado
                   </h3>
                   <p style={{ color: '#94A3B8', fontSize: '0.88rem', maxWidth: '480px', margin: '0 auto 1.5rem', lineHeight: 1.6 }}>
-                    Nenhum cliente inventado ou fictício. Inicie o cadastramento dos seus clientes reais com múltiplos bancos, senhas e órgãos reguladores.
+                    Cadastre uma nova Pessoa Jurídica ou Pessoa Física vinculada.
                   </p>
                   <button 
                     onClick={() => setActiveView('clients_new')}
@@ -1441,262 +1630,835 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                   </button>
                 </div>
               ) : filteredClients.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#94A3B8' }}>
-                  Nenhum cliente encontrado para o termo pesquisado.
+                <div style={{ padding: '3.5rem', textAlign: 'center', color: '#94A3B8', background: '#0D121D', borderRadius: 'var(--radius-md)', border: '1px dashed rgba(255,255,255,0.08)' }}>
+                  Nenhum cliente encontrado para o filtro selecionado ou termo pesquisado.
                 </div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '1.25rem' }}>
-                  {filteredClients.map((client) => (
-                    <div 
-                      key={client.id}
-                      style={{
-                        background: '#0D121D',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        borderRadius: 'var(--radius-md)',
-                        padding: '1.4rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        gap: '1rem',
-                        transition: 'border 0.2s',
-                        boxShadow: '0 4px 16px rgba(0, 0, 0, 0.3)'
-                      }}
-                    >
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-                          <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', letterSpacing: '0.08em', fontWeight: 600 }}>
-                            {client.dataCadastro ? `CADASTRADO EM ${client.dataCadastro}` : 'CLIENTE MOURATO'}
-                          </span>
-                          <span style={{ 
-                            fontSize: '0.68rem', 
-                            padding: '0.15rem 0.5rem', 
-                            borderRadius: '9999px', 
-                            background: 'rgba(16, 185, 129, 0.12)', 
-                            color: '#34D399',
-                            border: '1px solid rgba(16, 185, 129, 0.25)',
-                            fontWeight: 600 
-                          }}>
-                            {client.contasBancarias?.length || 1} Banco(s)
-                          </span>
-                        </div>
+                  {filteredClients.map((client) => {
+                    const isPJ = client.tipo === 'PJ';
+                    return (
+                      <div 
+                        key={client.id}
+                        style={{
+                          background: '#0D121D',
+                          border: isPJ ? '1px solid rgba(197, 168, 105, 0.35)' : '1px solid rgba(0, 158, 227, 0.3)',
+                          borderRadius: 'var(--radius-md)',
+                          padding: '1.4rem',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '1rem',
+                          transition: 'all 0.2s',
+                          boxShadow: '0 4px 18px rgba(0, 0, 0, 0.35)',
+                          position: 'relative',
+                          overflow: 'hidden'
+                        }}
+                      >
+                        {/* Indicador de Topo Luminoso */}
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          height: '3px',
+                          background: isPJ ? 'linear-gradient(90deg, #C5A869 0%, #E8D5A3 100%)' : 'linear-gradient(90deg, #009EE3 0%, #38BDF8 100%)'
+                        }} />
 
-                        <h3 style={{ fontSize: '1.05rem', color: '#FFFFFF', margin: '0 0 0.35rem', fontWeight: 700 }}>
-                          {client.nomeRazao}
-                        </h3>
-                        <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.75rem' }}>
-                          CNPJ/CPF: <strong style={{ color: '#E2E8F0' }}>{client.documento || 'Não informado'}</strong>
-                        </div>
-
-                        {/* Banks preview chips */}
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
-                          {client.contasBancarias?.map((b, idx) => (
-                            <span 
-                              key={idx}
-                              style={{
-                                fontSize: '0.72rem',
+                        <div>
+                          {/* Cabeçalho do Card */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                            {/* Badge do Tipo (PJ Dourada vs PF Azul) */}
+                            {isPJ ? (
+                              <span style={{
+                                fontSize: '0.68rem',
                                 padding: '0.2rem 0.6rem',
-                                borderRadius: 'var(--radius-xs)',
-                                background: '#131A29',
-                                border: '1px solid rgba(197, 168, 105, 0.2)',
+                                borderRadius: '9999px',
+                                background: 'rgba(197, 168, 105, 0.2)',
                                 color: 'var(--gold-light)',
-                                display: 'flex',
+                                border: '1px solid var(--gold-border)',
+                                fontWeight: 700,
+                                display: 'inline-flex',
                                 alignItems: 'center',
-                                gap: '0.35rem'
-                              }}
-                            >
-                              <Landmark size={11} />
-                              {b.banco === 'Outro' ? (b.bancoOutro || 'Outro') : b.banco}: Ag {b.agencia || '---'} / Cc {b.conta || '---'}
+                                gap: '0.35rem',
+                                letterSpacing: '0.04em'
+                              }}>
+                                <Building2 size={12} />
+                                PJ • EMPRESA
+                              </span>
+                            ) : (
+                              <span style={{
+                                fontSize: '0.68rem',
+                                padding: '0.2rem 0.6rem',
+                                borderRadius: '9999px',
+                                background: 'rgba(0, 158, 227, 0.18)',
+                                color: '#38BDF8',
+                                border: '1px solid rgba(0, 158, 227, 0.4)',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                letterSpacing: '0.04em'
+                              }}>
+                                <UserCheck size={12} />
+                                PF • SÓCIO
+                              </span>
+                            )}
+
+                            <span style={{ 
+                              fontSize: '0.68rem', 
+                              padding: '0.15rem 0.5rem', 
+                              borderRadius: '9999px', 
+                              background: 'rgba(16, 185, 129, 0.12)', 
+                              color: '#34D399',
+                              border: '1px solid rgba(16, 185, 129, 0.25)',
+                              fontWeight: 600 
+                            }}>
+                              {client.contasBancarias?.length || 1} Conta(s)
                             </span>
-                          ))}
-                        </div>
+                          </div>
 
-                        {/* Bureaus tags */}
-                        <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.7rem', color: '#64748B' }}>
-                          <span>Gov: <strong style={{ color: '#E2E8F0' }}>{client.govNivel}</strong></span>
-                          <span>•</span>
-                          <span>Serasa: <strong style={{ color: '#E2E8F0' }}>{client.serasaStatus}</strong></span>
-                        </div>
-                      </div>
+                          {/* Razão Social / Nome Completo */}
+                          <h3 style={{ fontSize: '1.08rem', color: '#FFFFFF', margin: '0 0 0.35rem', fontWeight: 700, lineHeight: 1.3 }}>
+                            {client.nomeRazao}
+                          </h3>
 
-                      {/* Actions */}
-                      <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.9rem' }}>
-                        <button
-                          onClick={() => handleOpenNewCharge(client)}
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            padding: '0.55rem 0.85rem',
-                            fontSize: '0.78rem',
-                            borderRadius: 'var(--radius-sm)',
-                            background: 'rgba(0, 158, 227, 0.15)',
-                            border: '1px solid rgba(0, 158, 227, 0.4)',
-                            color: '#00B4FF',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            transition: 'background 0.2s'
-                          }}
-                          title="Gerar Cobrança Mercado Pago com validação antifraude"
-                        >
-                          <CreditCard size={14} />
-                          Cobrar
-                        </button>
-                        <button
-                          onClick={() => setSelectedClient(client)}
-                          className="btn-secondary-subtle"
-                          style={{ flex: 1, padding: '0.55rem', fontSize: '0.78rem', justifyContent: 'center' }}
-                        >
-                          Ver Dossiê Completo
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClient(client.id)}
-                          style={{
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.25)',
-                            color: '#F87171',
+                          {/* CNPJ ou CPF */}
+                          <div style={{ fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.65rem' }}>
+                            {isPJ ? 'CNPJ' : 'CPF'}: <strong style={{ color: '#FFFFFF' }}>{client.documento || 'Não informado'}</strong>
+                            {client.nire && <span style={{ marginLeft: '0.5rem', color: '#64748B' }}>• NIRE: {client.nire}</span>}
+                          </div>
+
+                          {/* Destaque do Vínculo Sócio <-> Empresa */}
+                          <div style={{
+                            background: isPJ ? 'rgba(197, 168, 105, 0.08)' : 'rgba(0, 158, 227, 0.08)',
+                            border: isPJ ? '1px solid rgba(197, 168, 105, 0.2)' : '1px solid rgba(0, 158, 227, 0.2)',
+                            borderRadius: 'var(--radius-xs)',
                             padding: '0.55rem 0.75rem',
-                            borderRadius: 'var(--radius-sm)',
-                            cursor: 'pointer'
-                          }}
-                          title="Excluir cliente"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                            fontSize: '0.75rem',
+                            marginBottom: '0.85rem'
+                          }}>
+                            {isPJ ? (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                <div style={{ color: 'var(--gold-light)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <Briefcase size={12} />
+                                  Sócio Administrador:
+                                </div>
+                                <div style={{ color: '#FFFFFF', fontWeight: 500 }}>
+                                  {client.socioVinculado || client.responsavel || 'José Jailson Mourato da Silva'}
+                                </div>
+                                {client.balanco && (
+                                  <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                    <span>Ativo: <strong style={{ color: '#E2E8F0' }}>{client.balanco.ativo}</strong></span>
+                                    <span>• PL: <strong style={{ color: '#E2E8F0' }}>{client.balanco.patrimonioLiquido}</strong></span>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                <div style={{ color: '#38BDF8', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                  <Building2 size={12} />
+                                  Empresa Vinculada:
+                                </div>
+                                <div style={{ color: '#FFFFFF', fontWeight: 500 }}>
+                                  {client.empresaVinculada || 'Mourato & Associados Ltda'}
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.2rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                  <span>Cargo: <strong style={{ color: '#E2E8F0' }}>{client.profissao || 'Sócio'}</strong></span>
+                                  {client.rendaPatrimonio?.veiculos && (
+                                    <span>• <strong style={{ color: '#E2E8F0' }}>{client.rendaPatrimonio.veiculos.split('(')[0]}</strong></span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Contas Bancárias (Preview Chips) */}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem', marginBottom: '0.85rem' }}>
+                            {client.contasBancarias?.map((b, idx) => (
+                              <span 
+                                key={idx}
+                                style={{
+                                  fontSize: '0.7rem',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: 'var(--radius-xs)',
+                                  background: '#131A29',
+                                  border: b.origemCcs ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
+                                  color: b.origemCcs ? '#34D399' : 'var(--gold-light)',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.35rem'
+                                }}
+                                title={b.origemCcs ? `CCS Bacen Homologado: ${b.origemCcs}` : b.statusConta}
+                              >
+                                <Landmark size={11} />
+                                {b.banco === 'Outro' ? (b.bancoOutro || 'Outro') : b.banco}
+                                {b.origemCcs && <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#34D399' }}>[CCS]</span>}
+                              </span>
+                            ))}
+                          </div>
+
+                          {/* Bureaus e Órgãos Reguladores */}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem', fontSize: '0.68rem', color: '#94A3B8' }}>
+                            <span style={{ background: '#070A10', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                              Bacen: <strong style={{ color: '#34D399' }}>{client.bacenScr ? client.bacenScr.split(' ')[0] + ' ' + (client.bacenScr.split(' ')[1] || '') : 'A1'}</strong>
+                            </span>
+                            <span style={{ background: '#070A10', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                              Serasa: <strong style={{ color: '#FFFFFF' }}>{client.serasaScore || client.serasaStatus}</strong>
+                            </span>
+                            <span style={{ background: '#070A10', padding: '0.15rem 0.45rem', borderRadius: '4px', border: '1px solid rgba(255,255,255,0.06)' }}>
+                              Gov.br: <strong style={{ color: '#FCD34D' }}>{client.govNivel || 'Ouro'}</strong>
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Botões de Ação */}
+                        <div style={{ display: 'flex', gap: '0.5rem', borderTop: '1px solid rgba(255, 255, 255, 0.06)', paddingTop: '0.85rem' }}>
+                          <button
+                            onClick={() => handleOpenNewCharge(client)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.55rem 0.85rem',
+                              fontSize: '0.78rem',
+                              borderRadius: 'var(--radius-sm)',
+                              background: 'rgba(0, 158, 227, 0.15)',
+                              border: '1px solid rgba(0, 158, 227, 0.4)',
+                              color: '#00B4FF',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap',
+                              transition: 'background 0.2s'
+                            }}
+                            title="Gerar Cobrança Mercado Pago com validação antifraude"
+                          >
+                            <CreditCard size={14} />
+                            Cobrar
+                          </button>
+                          <button
+                            onClick={() => setSelectedClient(client)}
+                            className="btn-secondary-subtle"
+                            style={{ flex: 1, padding: '0.55rem', fontSize: '0.78rem', justifyContent: 'center' }}
+                          >
+                            Ver Dossiê Completo
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClient(client.id)}
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              color: '#F87171',
+                              padding: '0.55rem 0.75rem',
+                              borderRadius: 'var(--radius-sm)',
+                              cursor: 'pointer'
+                            }}
+                            title="Excluir cadastro"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
           )}
 
           {/* ======================================================== */}
-          {/* TAB 2: CADASTRO DE CLIENTES                              */}
+          {/* TAB 2: CADASTRO DE CLIENTES (SELETOR PJ vs PF)          */}
           {/* ======================================================== */}
           {activeView === 'clients_new' && (
-            <div style={{ maxWidth: '880px', margin: '0 auto' }}>
+            <div style={{ maxWidth: '920px', margin: '0 auto' }}>
               <div style={{
                 background: '#0B0F17',
-                border: '1px solid rgba(197, 168, 105, 0.2)',
+                border: newClient.tipo === 'PJ' ? '1px solid rgba(197, 168, 105, 0.3)' : '1px solid rgba(0, 158, 227, 0.3)',
                 borderRadius: 'var(--radius-md)',
                 padding: '2.25rem',
-                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+                boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)',
+                transition: 'border 0.3s'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.75rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1rem' }}>
-                  <Building2 size={24} color="var(--gold-primary)" />
-                  <div>
-                    <h2 style={{ fontSize: '1.25rem', color: '#FFFFFF', margin: 0 }}>
-                      Ficha Cadastral &amp; Dossiê de Contas Bancárias
-                    </h2>
-                    <p style={{ fontSize: '0.76rem', color: '#94A3B8', margin: 0 }}>
-                      Preencha os dados institucionais, contas bancárias abertas e bureaus de análise.
-                    </p>
-                  </div>
-                </div>
-
-                <form onSubmit={handleSaveClient} style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
-                  
-                  {/* Seção 1: Identificação */}
-                  <div>
-                    <h3 style={{ fontSize: '0.86rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1rem' }}>
-                      1. Identificação da Companhia
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
-                          Razão Social / Nome Completo *
-                        </label>
-                        <input 
-                          type="text" 
-                          required
-                          value={newClient.nomeRazao}
-                          onChange={(e) => setNewClient({ ...newClient, nomeRazao: e.target.value })}
-                          placeholder="Ex: Mourato Participações Ltda"
-                          style={{
-                            width: '100%',
-                            padding: '0.7rem 0.9rem',
-                            background: '#06090F',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: '#FFFFFF',
-                            fontSize: '0.85rem'
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
-                          CNPJ ou CPF
-                        </label>
-                        <input 
-                          type="text" 
-                          value={newClient.documento}
-                          onChange={(e) => setNewClient({ ...newClient, documento: e.target.value })}
-                          placeholder="00.000.000/0000-00"
-                          style={{
-                            width: '100%',
-                            padding: '0.7rem 0.9rem',
-                            background: '#06090F',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: '#FFFFFF',
-                            fontSize: '0.85rem'
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
-                          Sócio / Responsável
-                        </label>
-                        <input 
-                          type="text" 
-                          value={newClient.responsavel}
-                          onChange={(e) => setNewClient({ ...newClient, responsavel: e.target.value })}
-                          placeholder="Nome do administrador"
-                          style={{
-                            width: '100%',
-                            padding: '0.7rem 0.9rem',
-                            background: '#06090F',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: '#FFFFFF',
-                            fontSize: '0.85rem'
-                          }}
-                        />
-                      </div>
-
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
-                          Contato / WhatsApp
-                        </label>
-                        <input 
-                          type="text" 
-                          value={newClient.contato}
-                          onChange={(e) => setNewClient({ ...newClient, contato: e.target.value })}
-                          placeholder="(11) 99999-9999"
-                          style={{
-                            width: '100%',
-                            padding: '0.7rem 0.9rem',
-                            background: '#06090F',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 'var(--radius-sm)',
-                            color: '#FFFFFF',
-                            fontSize: '0.85rem'
-                          }}
-                        />
-                      </div>
+                {/* Cabeçalho do Cadastro */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    {newClient.tipo === 'PJ' ? (
+                      <Building2 size={26} color="var(--gold-primary)" />
+                    ) : (
+                      <UserCheck size={26} color="#00B4FF" />
+                    )}
+                    <div>
+                      <h2 style={{ fontSize: '1.25rem', color: '#FFFFFF', margin: 0 }}>
+                        {newClient.tipo === 'PJ' ? 'Cadastro de Empresa (Pessoa Jurídica - PJ)' : 'Cadastro de Sócio / Pessoa Física (PF)'}
+                      </h2>
+                      <p style={{ fontSize: '0.76rem', color: '#94A3B8', margin: '3px 0 0' }}>
+                        {newClient.tipo === 'PJ' 
+                          ? 'Dossiê corporativo com balanço contábil, contas CCS Bacen e sócio administrador vinculado.' 
+                          : 'Dossiê pessoal com profissão, empresa vinculada, bens/veículos e bureaus individuais.'}
+                      </p>
                     </div>
                   </div>
 
-                  {/* Seção 2: Estrutura Bancária (Suporte a múltiplos bancos) */}
+                  {/* Badges de Auxílio */}
+                  <span style={{
+                    fontSize: '0.72rem',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    background: newClient.tipo === 'PJ' ? 'rgba(197, 168, 105, 0.15)' : 'rgba(0, 158, 227, 0.15)',
+                    border: newClient.tipo === 'PJ' ? '1px solid var(--gold-border)' : '1px solid rgba(0, 158, 227, 0.35)',
+                    color: newClient.tipo === 'PJ' ? 'var(--gold-light)' : '#38BDF8',
+                    fontWeight: 700
+                  }}>
+                    {newClient.tipo === 'PJ' ? '🏢 PERFIL CORPORATIVO' : '👤 PERFIL PESSOA FÍSICA'}
+                  </span>
+                </div>
+
+                {/* SELETOR VISUAL OBRIGATÓRIO: PJ vs PF */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setNewClient(prev => ({ ...prev, tipo: 'PJ', documentoTipo: 'CNPJ' }))}
+                    style={{
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: newClient.tipo === 'PJ' 
+                        ? 'linear-gradient(135deg, rgba(197, 168, 105, 0.22) 0%, rgba(197, 168, 105, 0.08) 100%)' 
+                        : '#070A10',
+                      border: newClient.tipo === 'PJ' ? '2px solid var(--gold-primary)' : '1px solid rgba(255, 255, 255, 0.1)',
+                      color: newClient.tipo === 'PJ' ? 'var(--gold-light)' : '#94A3B8',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.65rem',
+                      boxShadow: newClient.tipo === 'PJ' ? '0 4px 16px rgba(197, 168, 105, 0.25)' : 'none',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <Building2 size={20} color={newClient.tipo === 'PJ' ? 'var(--gold-primary)' : '#64748B'} />
+                    🏢 PESSOA JURÍDICA (EMPRESA)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setNewClient(prev => ({ ...prev, tipo: 'PF', documentoTipo: 'CPF' }))}
+                    style={{
+                      padding: '1rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: newClient.tipo === 'PF' 
+                        ? 'linear-gradient(135deg, rgba(0, 158, 227, 0.22) 0%, rgba(0, 158, 227, 0.08) 100%)' 
+                        : '#070A10',
+                      border: newClient.tipo === 'PF' ? '2px solid #00B4FF' : '1px solid rgba(255, 255, 255, 0.1)',
+                      color: newClient.tipo === 'PF' ? '#38BDF8' : '#94A3B8',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.65rem',
+                      boxShadow: newClient.tipo === 'PF' ? '0 4px 16px rgba(0, 158, 227, 0.25)' : 'none',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <UserCheck size={20} color={newClient.tipo === 'PF' ? '#00B4FF' : '#64748B'} />
+                    👤 PESSOA FÍSICA (SÓCIO)
+                  </button>
+                </div>
+
+                <form onSubmit={handleSaveClient} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                  
+                  {/* ================================================= */}
+                  {/* CASO PJ: CAMPOS DE PESSOA JURÍDICA                */}
+                  {/* ================================================= */}
+                  {newClient.tipo === 'PJ' && (
+                    <>
+                      {/* Seção 1: Identificação Corporativa */}
+                      <div>
+                        <h3 style={{ fontSize: '0.86rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <Building2 size={15} />
+                          1. Identificação Corporativa da Companhia (PJ)
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Razão Social da Empresa *
+                            </label>
+                            <input 
+                              type="text" 
+                              required
+                              value={newClient.nomeRazao}
+                              onChange={(e) => setNewClient({ ...newClient, nomeRazao: e.target.value })}
+                              placeholder="Ex: MOURATO E ASSOCIADOS LTDA"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              CNPJ da Empresa *
+                            </label>
+                            <input 
+                              type="text" 
+                              required
+                              value={newClient.documento}
+                              onChange={(e) => setNewClient({ ...newClient, documento: e.target.value })}
+                              placeholder="00.000.000/0001-00"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Sócio Administrador Vinculado (Nome e CPF) *
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newClient.socioVinculado}
+                              onChange={(e) => setNewClient({ ...newClient, socioVinculado: e.target.value, responsavel: e.target.value })}
+                              placeholder="Ex: José Jailson Mourato da Silva (CPF 317.769.598-92)"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Natureza Jurídica
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newClient.natureza}
+                              onChange={(e) => setNewClient({ ...newClient, natureza: e.target.value })}
+                              placeholder="Ex: 206-2 - Sociedade Empresária Limitada Unipessoal"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              NIRE JUCESP
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newClient.nire}
+                              onChange={(e) => setNewClient({ ...newClient, nire: e.target.value })}
+                              placeholder="Ex: 35270804594"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Contato / WhatsApp Corporativo
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newClient.contato}
+                              onChange={(e) => setNewClient({ ...newClient, contato: e.target.value })}
+                              placeholder="(11) 98765-4321"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Seção 2: Balanço Patrimonial & Dados Contábeis (PJ) */}
+                      <div style={{ background: '#070A10', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(197, 168, 105, 0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                          <FileSpreadsheet size={18} color="var(--gold-primary)" />
+                          <h3 style={{ fontSize: '0.88rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                            2. Balanço Patrimonial &amp; Dados Contábeis (PJ)
+                          </h3>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Ativo Total (R$)
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.balanco?.ativo || ''}
+                              onChange={(e) => handleBalancoChange('ativo', e.target.value)}
+                              placeholder="Ex: R$ 1.714.304,26"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Patrimônio Líquido - PL (R$)
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.balanco?.patrimonioLiquido || ''}
+                              onChange={(e) => handleBalancoChange('patrimonioLiquido', e.target.value)}
+                              placeholder="Ex: R$ 1.563.732,99"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Capital Social (R$)
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.balanco?.capitalSocial || ''}
+                              onChange={(e) => handleBalancoChange('capitalSocial', e.target.value)}
+                              placeholder="Ex: R$ 1.000.000,00"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Faturamento Anual Bruto (R$)
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.balanco?.faturamentoAnual || ''}
+                              onChange={(e) => handleBalancoChange('faturamentoAnual', e.target.value)}
+                              placeholder="Ex: R$ 1.409.898,34"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Contador Responsável (CRC)
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.balanco?.contadorResponsavel || ''}
+                              onChange={(e) => handleBalancoChange('contadorResponsavel', e.target.value)}
+                              placeholder="Ex: Nilson Oliveira dos Santos (CRC/SP)"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ================================================= */}
+                  {/* CASO PF: CAMPOS DE PESSOA FÍSICA (SÓCIO)          */}
+                  {/* ================================================= */}
+                  {newClient.tipo === 'PF' && (
+                    <>
+                      {/* Seção 1: Identificação da Pessoa Física */}
+                      <div>
+                        <h3 style={{ fontSize: '0.86rem', color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <UserCheck size={15} />
+                          1. Identificação da Pessoa Física (Sócio / Titular)
+                        </h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Nome Completo *
+                            </label>
+                            <input 
+                              type="text" 
+                              required
+                              value={newClient.nomeRazao}
+                              onChange={(e) => setNewClient({ ...newClient, nomeRazao: e.target.value })}
+                              placeholder="Ex: JOSÉ JAILSON MOURATO DA SILVA"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              CPF do Sócio *
+                            </label>
+                            <input 
+                              type="text" 
+                              required
+                              value={newClient.documento}
+                              onChange={(e) => setNewClient({ ...newClient, documento: e.target.value })}
+                              placeholder="000.000.000-00"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Empresa Vinculada *
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newClient.empresaVinculada}
+                              onChange={(e) => setNewClient({ ...newClient, empresaVinculada: e.target.value })}
+                              placeholder="Ex: MOURATO E ASSOCIADOS LTDA"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Profissão / Cargo Societário
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newClient.profissao}
+                              onChange={(e) => setNewClient({ ...newClient, profissao: e.target.value })}
+                              placeholder="Ex: Sócio-Administrador / Empresário / Contador CRC"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              Contato / Celular WhatsApp
+                            </label>
+                            <input 
+                              type="text" 
+                              value={newClient.contato}
+                              onChange={(e) => setNewClient({ ...newClient, contato: e.target.value })}
+                              placeholder="(11) 98765-4321"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
+                              E-mail Pessoal
+                            </label>
+                            <input 
+                              type="email" 
+                              value={newClient.email}
+                              onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                              placeholder="email@dominio.com.br"
+                              style={{
+                                width: '100%',
+                                padding: '0.7rem 0.9rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-sm)',
+                                color: '#FFFFFF',
+                                fontSize: '0.85rem'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Seção 2: Renda, Pró-Labore & Patrimônio Pessoal (PF) */}
+                      <div style={{ background: '#070A10', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(0, 158, 227, 0.2)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem' }}>
+                          <Car size={18} color="#38BDF8" />
+                          <h3 style={{ fontSize: '0.88rem', color: '#38BDF8', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
+                            2. Renda, Pró-Labore &amp; Patrimônio Pessoal (PF)
+                          </h3>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Renda / Pró-Labore Estimado (R$)
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.rendaPatrimonio?.proLabore || ''}
+                              onChange={(e) => handleRendaPatrimonioChange('proLabore', e.target.value)}
+                              placeholder="Ex: R$ 25.000,00"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Bens Declarados (Imóveis, Quotas)
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.rendaPatrimonio?.bens || ''}
+                              onChange={(e) => handleRendaPatrimonioChange('bens', e.target.value)}
+                              placeholder="Ex: Imóvel próprio avaliado em R$ 550k"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
+                              Veículos / Renavam / Placa
+                            </label>
+                            <input 
+                              type="text"
+                              value={newClient.rendaPatrimonio?.veiculos || ''}
+                              onChange={(e) => handleRendaPatrimonioChange('veiculos', e.target.value)}
+                              placeholder="Ex: Yamaha YBR 125K Placa DUZ0988 Renavam 00909604606"
+                              style={{
+                                width: '100%',
+                                padding: '0.65rem',
+                                background: '#06090F',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                borderRadius: 'var(--radius-xs)',
+                                color: '#FFFFFF',
+                                fontSize: '0.82rem'
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* ================================================= */}
+                  {/* SEÇÃO 3: ESTRUTURA BANCÁRIA (COMUM A PF E PJ)     */}
+                  {/* ================================================= */}
                   <div style={{ background: '#070A10', padding: '1.5rem', borderRadius: 'var(--radius-md)', border: '1px solid rgba(197, 168, 105, 0.15)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         <Landmark size={18} color="var(--gold-primary)" />
                         <h3 style={{ fontSize: '0.88rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
-                          2. Estrutura Bancária &amp; Contas Abertas
+                          3. Estrutura Bancária &amp; Contas Abertas {newClient.tipo === 'PJ' ? '(CCS Bacen PJ)' : '(PF)'}
                         </h3>
                       </div>
                       
@@ -1736,7 +2498,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                         >
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                             <span style={{ fontSize: '0.75rem', color: 'var(--gold-light)', fontWeight: 700 }}>
-                              BANCO #{index + 1}
+                              CONTA #{index + 1} {newClient.tipo === 'PJ' ? '(CONTA JURÍDICA / CCS)' : '(CONTA INDIVIDUAL)'}
                             </span>
                             {newClient.contasBancarias.length > 1 && (
                               <button
@@ -1777,6 +2539,8 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                                   fontSize: '0.82rem'
                                 }}
                               >
+                                <option value="Nu Pagamentos">Nu Pagamentos (IP 18.236.120)</option>
+                                <option value="Nu Financeira">Nu Financeira (CFI 30.680.829)</option>
                                 <option value="Itaú">Itaú Unibanco</option>
                                 <option value="Bradesco">Bradesco</option>
                                 <option value="Santander">Santander</option>
@@ -1785,7 +2549,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                                 <option value="BTG Pactual">BTG Pactual</option>
                                 <option value="Safra">Banco Safra</option>
                                 <option value="Inter">Banco Inter</option>
-                                <option value="Nubank">Nubank PJ</option>
+                                <option value="Nubank">Nubank PJ/PF</option>
                                 <option value="Sicoob">Sicoob</option>
                                 <option value="Sicredi">Sicredi</option>
                                 <option value="Outro">Outro Banco...</option>
@@ -1795,13 +2559,13 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                             {bancoItem.banco === 'Outro' && (
                               <div>
                                 <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
-                                  Nome do Banco
+                                  Nome da Instituição
                                 </label>
                                 <input 
                                   type="text"
                                   value={bancoItem.bancoOutro}
                                   onChange={(e) => handleBankFieldChange(index, 'bancoOutro', e.target.value)}
-                                  placeholder="Digite o nome do banco"
+                                  placeholder="Digite o nome da instituição"
                                   style={{
                                     width: '100%',
                                     padding: '0.65rem',
@@ -1823,7 +2587,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                                 type="text"
                                 value={bancoItem.agencia}
                                 onChange={(e) => handleBankFieldChange(index, 'agencia', e.target.value)}
-                                placeholder="0000"
+                                placeholder="0001"
                                 style={{
                                   width: '100%',
                                   padding: '0.65rem',
@@ -1844,7 +2608,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                                 type="text"
                                 value={bancoItem.conta}
                                 onChange={(e) => handleBankFieldChange(index, 'conta', e.target.value)}
-                                placeholder="00000-0"
+                                placeholder="000000-0"
                                 style={{
                                   width: '100%',
                                   padding: '0.65rem',
@@ -1857,7 +2621,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                               />
                             </div>
 
-                            {/* Password field with Eye toggle button */}
+                            {/* Senha com Eye toggle */}
                             <div>
                               <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.3rem' }}>
                                 Senha de Acesso / Assinatura
@@ -1867,7 +2631,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                                   type={showFormPasswords[index] ? "text" : "password"}
                                   value={bancoItem.senhaAcesso}
                                   onChange={(e) => handleBankFieldChange(index, 'senhaAcesso', e.target.value)}
-                                  placeholder="Senha salva"
+                                  placeholder="Assinatura eletrônica"
                                   style={{
                                     width: '100%',
                                     padding: '0.65rem 2.4rem 0.65rem 0.75rem',
@@ -1919,8 +2683,8 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                               >
                                 <option value="Aberta e Operando">Aberta e Operando</option>
                                 <option value="Em Abertura / Análise">Em Abertura / Análise</option>
-                                <option value="Aguardando Validação de Assinatura">Aguardando Validação</option>
-                                <option value="Bloqueada / Restrição">Bloqueada / Restrição</option>
+                                <option value="Aguardando Validação">Aguardando Validação</option>
+                                <option value="Encerrada Regularmente">Encerrada Regularmente</option>
                               </select>
                             </div>
                           </div>
@@ -1929,18 +2693,37 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* Seção 3: Bureaus de Crédito e Órgãos Reguladores */}
+                  {/* ================================================= */}
+                  {/* SEÇÃO 4: BUREAUS DE CRÉDITO & ÓRGÃOS REGULADORES  */}
+                  {/* ================================================= */}
                   <div>
-                    <h3 style={{ fontSize: '0.86rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1rem' }}>
-                      3. Bureaus de Crédito &amp; Portal Governamental
+                    <h3 style={{ fontSize: '0.86rem', color: 'var(--gold-light)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <ShieldCheck size={15} />
+                      4. Bureaus de Análise &amp; Órgãos Reguladores {newClient.tipo === 'PJ' ? '(Corporativo)' : '(Individual)'}
                     </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                       
                       {/* Serasa */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                         <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Serasa Experian
+                          Serasa Experian {newClient.tipo === 'PJ' ? 'PJ' : 'PF'}
                         </div>
+                        <input
+                          type="text"
+                          value={newClient.serasaScore}
+                          onChange={(e) => setNewClient({ ...newClient, serasaScore: e.target.value })}
+                          placeholder="Score ou Situação"
+                          style={{
+                            width: '100%',
+                            padding: '0.6rem',
+                            background: '#06090F',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: 'var(--radius-xs)',
+                            color: '#FFFFFF',
+                            fontSize: '0.78rem',
+                            marginBottom: '0.4rem'
+                          }}
+                        />
                         <select
                           value={newClient.serasaStatus}
                           onChange={(e) => setNewClient({ ...newClient, serasaStatus: e.target.value })}
@@ -1957,14 +2740,40 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                           <option value="Sem Apontamentos">Sem Apontamentos (Limpo)</option>
                           <option value="Apontamento Negociado">Apontamento Negociado</option>
                           <option value="Restrição Ativa">Restrição Ativa</option>
-                          <option value="Em Limpeza de Nome">Em Limpeza de Nome</option>
+                          <option value="Em Limpeza / Saneamento">Em Limpeza / Saneamento</option>
+                        </select>
+                      </div>
+
+                      {/* Bacen SCR */}
+                      <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
+                          Banco Central - SCR Registrato
+                        </div>
+                        <select
+                          value={newClient.bacenScr}
+                          onChange={(e) => setNewClient({ ...newClient, bacenScr: e.target.value })}
+                          style={{
+                            width: '100%',
+                            padding: '0.6rem',
+                            background: '#06090F',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: 'var(--radius-xs)',
+                            color: '#FFFFFF',
+                            fontSize: '0.78rem'
+                          }}
+                        >
+                          <option value="Rating A1 (Prime Rate Corporativo)">Rating A1 (Prime Rate / Sem Prejuízos)</option>
+                          <option value="Rating A (Ficha Limpa)">Rating A (Ficha Limpa)</option>
+                          <option value="Rating B (Normal)">Rating B (Normal)</option>
+                          <option value="Rating C / D (Em Monitoramento)">Rating C / D (Em Monitoramento)</option>
+                          <option value="Rating D / E (Em Recuperação)">Rating D / E (Em Recuperação)</option>
                         </select>
                       </div>
 
                       {/* Gov.br */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                         <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Gov.br
+                          Gov.br / Certificação
                         </div>
                         <select
                           value={newClient.govNivel}
@@ -1976,19 +2785,35 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: 'var(--radius-xs)',
                             color: '#FFFFFF',
-                            fontSize: '0.78rem'
+                            fontSize: '0.78rem',
+                            marginBottom: '0.4rem'
                           }}
                         >
-                          <option value="Ouro">Nível Ouro (Biometria / Bancário)</option>
+                          <option value="Ouro">Nível Ouro (Certificado A1 / Biometria)</option>
                           <option value="Prata">Nível Prata (Bancos Credenciados)</option>
                           <option value="Bronze">Nível Bronze</option>
                         </select>
+                        <input
+                          type="text"
+                          value={newClient.govProtocolo}
+                          onChange={(e) => setNewClient({ ...newClient, govProtocolo: e.target.value })}
+                          placeholder="e-CNPJ ou e-CPF SyngularID"
+                          style={{
+                            width: '100%',
+                            padding: '0.55rem',
+                            background: '#06090F',
+                            border: '1px solid rgba(255, 255, 255, 0.1)',
+                            borderRadius: 'var(--radius-xs)',
+                            color: '#FFFFFF',
+                            fontSize: '0.75rem'
+                          }}
+                        />
                       </div>
 
                       {/* Quod */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
                         <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Quod
+                          Quod Empresas / Consumidor
                         </div>
                         <select
                           value={newClient.quodStatus}
@@ -2027,7 +2852,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                             fontSize: '0.78rem'
                           }}
                         >
-                          <option value="Sem Restrições">Sem Restrições</option>
+                          <option value="Sem Restrições">Sem Restrições (Faixa A)</option>
                           <option value="Score Regular">Score Regular</option>
                           <option value="Pendência Comercial">Pendência Comercial</option>
                         </select>
@@ -2035,7 +2860,9 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* Seção 4: Limite e Observações */}
+                  {/* ================================================= */}
+                  {/* SEÇÃO 5: LIMITE & OBSERVAÇÕES RESERVADAS          */}
+                  {/* ================================================= */}
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem' }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.76rem', color: '#CBD5E1', marginBottom: '0.35rem' }}>
@@ -2045,7 +2872,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                         type="text" 
                         value={newClient.limiteAprovado}
                         onChange={(e) => setNewClient({ ...newClient, limiteAprovado: e.target.value })}
-                        placeholder="Ex: R$ 5.000.000,00"
+                        placeholder="Ex: R$ 1.450.000,00"
                         style={{
                           width: '100%',
                           padding: '0.7rem 0.9rem',
@@ -2066,7 +2893,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                         type="text" 
                         value={newClient.observacoesSigilosas}
                         onChange={(e) => setNewClient({ ...newClient, observacoesSigilosas: e.target.value })}
-                        placeholder="Notas estratégicas ou exigências de garantias..."
+                        placeholder="Notas periciais ou exigências de garantias..."
                         style={{
                           width: '100%',
                           padding: '0.7rem 0.9rem',
@@ -2080,7 +2907,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* Actions */}
+                  {/* Botões de Ação */}
                   <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                     <button
                       type="button"
@@ -2095,7 +2922,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                       className="btn-primary-gold"
                       style={{ padding: '0.8rem 2rem', fontSize: '0.86rem' }}
                     >
-                      Salvar Cadastro de Cliente
+                      Salvar Cadastro de {newClient.tipo === 'PJ' ? 'Empresa' : 'Sócio'}
                       <Check size={16} />
                     </button>
                   </div>
@@ -3118,7 +3945,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
         <div style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(5, 7, 12, 0.85)',
+          background: 'rgba(5, 7, 12, 0.88)',
           backdropFilter: 'blur(8px)',
           zIndex: 1100,
           display: 'flex',
@@ -3128,14 +3955,14 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
         }}>
           <div style={{
             background: '#0D121D',
-            border: '1px solid var(--gold-border)',
+            border: selectedClient.tipo === 'PJ' ? '1px solid var(--gold-border)' : '1px solid rgba(0, 158, 227, 0.45)',
             borderRadius: 'var(--radius-md)',
-            maxWidth: '680px',
+            maxWidth: '720px',
             width: '100%',
             maxHeight: '90vh',
             overflowY: 'auto',
-            padding: '2rem',
-            boxShadow: '0 16px 48px rgba(0, 0, 0, 0.7)',
+            padding: '2.25rem',
+            boxShadow: '0 16px 48px rgba(0, 0, 0, 0.8)',
             position: 'relative'
           }}>
             <button
@@ -3147,29 +3974,181 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                 background: 'none',
                 border: 'none',
                 color: '#94A3B8',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                padding: '0.4rem'
               }}
             >
               <X size={18} />
             </button>
 
-            <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1rem' }}>
-              <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', letterSpacing: '0.1em', fontWeight: 600 }}>
-                DOSSIÊ CONFIDENCIAL • MOURATO &amp; ASSOCIADOS
-              </span>
-              <h2 style={{ fontSize: '1.35rem', color: '#FFFFFF', margin: '0.25rem 0' }}>
+            {/* Cabeçalho do Dossiê */}
+            <div style={{ marginBottom: '1.5rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1.2rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', letterSpacing: '0.1em', fontWeight: 700 }}>
+                  DOSSIÊ PERICIAL CONFIDENCIAL • MOURATO &amp; ASSOCIADOS
+                </span>
+                
+                {selectedClient.tipo === 'PJ' ? (
+                  <span style={{
+                    fontSize: '0.68rem',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '9999px',
+                    background: 'rgba(197, 168, 105, 0.2)',
+                    color: 'var(--gold-light)',
+                    border: '1px solid var(--gold-border)',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}>
+                    <Building2 size={12} />
+                    PESSOA JURÍDICA (PJ)
+                  </span>
+                ) : (
+                  <span style={{
+                    fontSize: '0.68rem',
+                    padding: '0.2rem 0.6rem',
+                    borderRadius: '9999px',
+                    background: 'rgba(0, 158, 227, 0.2)',
+                    color: '#38BDF8',
+                    border: '1px solid rgba(0, 158, 227, 0.4)',
+                    fontWeight: 700,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem'
+                  }}>
+                    <UserCheck size={12} />
+                    PESSOA FÍSICA (PF)
+                  </span>
+                )}
+              </div>
+
+              <h2 style={{ fontSize: '1.45rem', color: '#FFFFFF', margin: '0.25rem 0', fontWeight: 800 }}>
                 {selectedClient.nomeRazao}
               </h2>
-              <div style={{ fontSize: '0.82rem', color: '#94A3B8' }}>
-                CNPJ/CPF: <strong style={{ color: '#FFFFFF' }}>{selectedClient.documento || 'Não informado'}</strong> • Responsável: <strong style={{ color: '#FFFFFF' }}>{selectedClient.responsavel || 'Não informado'}</strong>
+
+              <div style={{ fontSize: '0.82rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                {selectedClient.tipo === 'PJ' ? 'CNPJ' : 'CPF'}: <strong style={{ color: '#FFFFFF' }}>{selectedClient.documento || 'Não informado'}</strong>
+                {selectedClient.nire && <span> • NIRE JUCESP: <strong style={{ color: '#CBD5E1' }}>{selectedClient.nire}</strong></span>}
+                {selectedClient.contato && <span> • Contato: <strong style={{ color: '#CBD5E1' }}>{selectedClient.contato}</strong></span>}
               </div>
             </div>
 
+            {/* SEÇÃO ESPECÍFICA PJ: BALANÇO PATRIMONIAL & SÓCIO ADMINISTRADOR */}
+            {selectedClient.tipo === 'PJ' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                
+                {/* Vínculo Societário */}
+                <div style={{ background: '#070A10', border: '1px solid rgba(197, 168, 105, 0.2)', borderRadius: 'var(--radius-sm)', padding: '1rem' }}>
+                  <div style={{ fontSize: '0.74rem', color: 'var(--gold-light)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Briefcase size={14} />
+                    Sócio Administrador Responsável
+                  </div>
+                  <div style={{ fontSize: '0.95rem', color: '#FFFFFF', fontWeight: 700 }}>
+                    {selectedClient.socioVinculado || selectedClient.responsavel || 'José Jailson Mourato da Silva'}
+                  </div>
+                  {selectedClient.natureza && (
+                    <div style={{ fontSize: '0.74rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                      Natureza Jurídica: {selectedClient.natureza}
+                    </div>
+                  )}
+                </div>
+
+                {/* Dados Contábeis Auditados */}
+                {selectedClient.balanco && (
+                  <div style={{ background: '#070A10', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-sm)', padding: '1.1rem' }}>
+                    <div style={{ fontSize: '0.74rem', color: 'var(--gold-light)', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <FileSpreadsheet size={14} />
+                      Balanço Patrimonial &amp; Dados Contábeis ({selectedClient.balanco.exercicio || '2026 Auditado'})
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.85rem', fontSize: '0.8rem' }}>
+                      <div style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)' }}>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>ATIVO TOTAL</span>
+                        <strong style={{ color: '#FFFFFF' }}>{selectedClient.balanco.ativo || '---'}</strong>
+                      </div>
+                      <div style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)' }}>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>PATRIMÔNIO LÍQUIDO</span>
+                        <strong style={{ color: '#34D399' }}>{selectedClient.balanco.patrimonioLiquido || '---'}</strong>
+                      </div>
+                      <div style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)' }}>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>CAPITAL SOCIAL</span>
+                        <strong style={{ color: '#FFFFFF' }}>{selectedClient.balanco.capitalSocial || '---'}</strong>
+                      </div>
+                      <div style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)' }}>
+                        <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>FATURAMENTO ANUAL</span>
+                        <strong style={{ color: 'var(--gold-light)' }}>{selectedClient.balanco.faturamentoAnual || '---'}</strong>
+                      </div>
+                    </div>
+
+                    {selectedClient.balanco.contadorResponsavel && (
+                      <div style={{ fontSize: '0.72rem', color: '#94A3B8', marginTop: '0.75rem', borderTop: '1px solid rgba(255, 255, 255, 0.05)', paddingTop: '0.5rem' }}>
+                        Responsável Técnico Contábil: <strong style={{ color: '#CBD5E1' }}>{selectedClient.balanco.contadorResponsavel}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+              </div>
+            )}
+
+            {/* SEÇÃO ESPECÍFICA PF: EMPRESA VINCULADA, RENDA & PATRIMÔNIO */}
+            {selectedClient.tipo === 'PF' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                
+                {/* Vínculo Corporativo & Cargo */}
+                <div style={{ background: '#070A10', border: '1px solid rgba(0, 158, 227, 0.25)', borderRadius: 'var(--radius-sm)', padding: '1rem' }}>
+                  <div style={{ fontSize: '0.74rem', color: '#38BDF8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Building2 size={14} />
+                    Empresa Vinculada &amp; Atuação
+                  </div>
+                  <div style={{ fontSize: '0.95rem', color: '#FFFFFF', fontWeight: 700 }}>
+                    {selectedClient.empresaVinculada || 'Mourato & Associados Ltda'}
+                  </div>
+                  <div style={{ fontSize: '0.76rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                    Cargo / Qualificação: <strong style={{ color: '#CBD5E1' }}>{selectedClient.profissao || 'Sócio / Titular'}</strong>
+                  </div>
+                </div>
+
+                {/* Renda & Bens */}
+                {selectedClient.rendaPatrimonio && (
+                  <div style={{ background: '#070A10', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-sm)', padding: '1.1rem' }}>
+                    <div style={{ fontSize: '0.74rem', color: '#38BDF8', textTransform: 'uppercase', fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Car size={14} />
+                      Renda, Pró-Labore &amp; Patrimônio Declarado
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.85rem', fontSize: '0.8rem' }}>
+                      {selectedClient.rendaPatrimonio.proLabore && (
+                        <div style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)' }}>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>PRÓ-LABORE / RENDA</span>
+                          <strong style={{ color: '#34D399' }}>{selectedClient.rendaPatrimonio.proLabore}</strong>
+                        </div>
+                      )}
+                      {selectedClient.rendaPatrimonio.bens && (
+                        <div style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)' }}>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>BENS DECLARADOS</span>
+                          <strong style={{ color: '#FFFFFF' }}>{selectedClient.rendaPatrimonio.bens}</strong>
+                        </div>
+                      )}
+                      {selectedClient.rendaPatrimonio.veiculos && (
+                        <div style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)', gridColumn: '1 / -1' }}>
+                          <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>VEÍCULOS / RENAVAM</span>
+                          <strong style={{ color: 'var(--gold-light)' }}>{selectedClient.rendaPatrimonio.veiculos}</strong>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+              </div>
+            )}
+
             {/* Contas Bancárias Cadastradas */}
             <div style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontSize: '0.88rem', color: 'var(--gold-light)', textTransform: 'uppercase', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <h3 style={{ fontSize: '0.86rem', color: 'var(--gold-light)', textTransform: 'uppercase', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                 <Landmark size={15} />
-                Contas Bancárias ({selectedClient.contasBancarias?.length || 1})
+                Contas Bancárias ({selectedClient.contasBancarias?.length || 1}) {selectedClient.tipo === 'PJ' ? '• CCS Bacen' : ''}
               </h3>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -3178,16 +4157,23 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                     key={idx}
                     style={{
                       background: '#070A10',
-                      border: '1px solid rgba(197, 168, 105, 0.15)',
+                      border: b.origemCcs ? '1px solid rgba(16, 185, 129, 0.35)' : '1px solid rgba(197, 168, 105, 0.15)',
                       borderRadius: 'var(--radius-sm)',
                       padding: '1rem'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                      <strong style={{ color: '#FFFFFF', fontSize: '0.9rem' }}>
-                        {b.banco === 'Outro' ? (b.bancoOutro || 'Outro') : b.banco}
-                      </strong>
-                      <span style={{ fontSize: '0.7rem', color: '#34D399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.15rem 0.5rem', borderRadius: '9999px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', flexWrap: 'wrap', gap: '0.4rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                        <strong style={{ color: '#FFFFFF', fontSize: '0.9rem' }}>
+                          {b.banco === 'Outro' ? (b.bancoOutro || 'Outro') : b.banco}
+                        </strong>
+                        {b.origemCcs && (
+                          <span style={{ fontSize: '0.68rem', color: '#34D399', background: 'rgba(16, 185, 129, 0.15)', padding: '0.1rem 0.45rem', borderRadius: '4px', fontWeight: 700 }}>
+                            CCS BACEN HOMOLOGADO
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontSize: '0.7rem', color: '#34D399', background: 'rgba(16, 185, 129, 0.12)', padding: '0.15rem 0.5rem', borderRadius: '9999px' }}>
                         {b.statusConta}
                       </span>
                     </div>
@@ -3227,49 +4213,66 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
             </div>
 
             {/* Bureaus Status */}
-            <div style={{ marginBottom: '1.5rem', background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
-              <h3 style={{ fontSize: '0.84rem', color: 'var(--gold-light)', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
+            <div style={{ marginBottom: '1.5rem', background: '#070A10', padding: '1.1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+              <h3 style={{ fontSize: '0.84rem', color: 'var(--gold-light)', textTransform: 'uppercase', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <ShieldCheck size={14} />
                 Bureaus &amp; Órgãos Reguladores
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem', fontSize: '0.78rem' }}>
-                <div>
+                <div style={{ background: '#0D121D', padding: '0.65rem', borderRadius: 'var(--radius-xs)' }}>
+                  <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>BACEN SCR</span>
+                  <strong style={{ color: '#34D399' }}>{selectedClient.bacenScr || 'Rating A1'}</strong>
+                </div>
+                <div style={{ background: '#0D121D', padding: '0.65rem', borderRadius: 'var(--radius-xs)' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>SERASA EXPERIAN</span>
-                  <strong style={{ color: '#FFFFFF' }}>{selectedClient.serasaStatus}</strong>
+                  <strong style={{ color: '#FFFFFF' }}>{selectedClient.serasaScore || selectedClient.serasaStatus}</strong>
                 </div>
-                <div>
+                <div style={{ background: '#0D121D', padding: '0.65rem', borderRadius: 'var(--radius-xs)' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>GOV.BR</span>
-                  <strong style={{ color: '#FFFFFF' }}>{selectedClient.govNivel}</strong>
+                  <strong style={{ color: '#FCD34D' }}>{selectedClient.govNivel || 'Ouro'}</strong>
                 </div>
-                <div>
+                <div style={{ background: '#0D121D', padding: '0.65rem', borderRadius: 'var(--radius-xs)' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>QUOD</span>
-                  <strong style={{ color: '#FFFFFF' }}>{selectedClient.quodStatus}</strong>
+                  <strong style={{ color: '#FFFFFF' }}>{selectedClient.quodStatus || 'Positivo'}</strong>
                 </div>
-                <div>
+                <div style={{ background: '#0D121D', padding: '0.65rem', borderRadius: 'var(--radius-xs)' }}>
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>BOA VISTA</span>
-                  <strong style={{ color: '#FFFFFF' }}>{selectedClient.boaVistaStatus}</strong>
+                  <strong style={{ color: '#FFFFFF' }}>{selectedClient.boaVistaStatus || 'Sem Restrições'}</strong>
                 </div>
               </div>
             </div>
 
             {/* Observações e Limites */}
             {selectedClient.limiteAprovado && (
-              <div style={{ marginBottom: '1rem', fontSize: '0.82rem' }}>
-                <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>LIMITE ESTRUTURADO</span>
-                <strong style={{ color: 'var(--gold-light)', fontSize: '1.1rem' }}>{selectedClient.limiteAprovado}</strong>
+              <div style={{ marginBottom: '1.25rem', fontSize: '0.82rem', background: '#070A10', padding: '0.85rem', borderRadius: 'var(--radius-xs)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem' }}>LIMITE ESTRUTURADO / POTENCIAL PRONAMPE</span>
+                <strong style={{ color: '#34D399', fontSize: '1.15rem' }}>{selectedClient.limiteAprovado}</strong>
               </div>
             )}
 
             {selectedClient.observacoesSigilosas && (
-              <div style={{ fontSize: '0.82rem', background: '#090D14', padding: '0.85rem', borderRadius: 'var(--radius-xs)', borderLeft: '3px solid var(--gold-primary)' }}>
-                <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem', marginBottom: '0.2rem' }}>OBSERVAÇÕES RESERVADAS</span>
+              <div style={{ fontSize: '0.82rem', background: '#090D14', padding: '0.9rem', borderRadius: 'var(--radius-xs)', borderLeft: '3px solid var(--gold-primary)' }}>
+                <span style={{ color: '#64748B', display: 'block', fontSize: '0.7rem', marginBottom: '0.2rem', fontWeight: 600 }}>OBSERVAÇÕES PERICIAIS RESERVADAS</span>
                 <p style={{ color: '#CBD5E1', margin: 0, lineHeight: 1.5 }}>{selectedClient.observacoesSigilosas}</p>
               </div>
             )}
 
-            <div style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button
+                onClick={() => {
+                  const clientToCharge = selectedClient;
+                  setSelectedClient(null);
+                  handleOpenNewCharge(clientToCharge);
+                }}
+                className="btn-primary-gold"
+                style={{ padding: '0.65rem 1.25rem', fontSize: '0.82rem', gap: '0.4rem' }}
+              >
+                <CreditCard size={15} />
+                Emitir Cobrança
+              </button>
               <button
                 onClick={() => setSelectedClient(null)}
-                className="btn-primary-gold"
+                className="btn-secondary-subtle"
                 style={{ padding: '0.65rem 1.5rem', fontSize: '0.82rem' }}
               >
                 Fechar Dossiê
