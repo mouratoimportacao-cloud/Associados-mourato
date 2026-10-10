@@ -46,7 +46,10 @@ import {
   FileSpreadsheet,
   Car,
   Printer,
-  Activity
+  Activity,
+  Edit,
+  Edit2,
+  Save
 } from 'lucide-react';
 import { createPixCharge, createCheckoutProPreference, validateAntifraudPayer } from '../services/mercadoPagoService';
 import { TEIA_INITIAL_CLIENTS } from '../data/teiaDatabase';
@@ -221,15 +224,147 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
   const [bureauModalDoc, setBureauModalDoc] = useState(null);
   const [bureauSyncClock, setBureauSyncClock] = useState(() => new Date().toLocaleTimeString('pt-BR'));
   const [bureauCategoryFilter, setBureauCategoryFilter] = useState('todos');
+  const [isBureauEditMode, setIsBureauEditMode] = useState(false);
+  const [editingClientId, setEditingClientId] = useState(null);
+  const [printModalType, setPrintModalType] = useState(null); // 'all_clients' | 'single_client' | 'bureau_report'
+  const [printTargetClient, setPrintTargetClient] = useState(null);
 
   const getBureauDataForClient = (client) => {
     if (!client) return { serasa: 654, boavista: 716, quod: 682, bacen: 'A1', prob: '82.4%', atrasos: 'Zero Atrasos' };
     const saved = bureauScoresMap[client.id];
     if (saved) return saved;
     if (client.tipo === 'PJ') {
-      return { serasa: 885, boavista: 818, quod: 709, bacen: 'A1', prob: '96.2%', atrasos: 'Zero Atrasos' };
+      return { 
+        serasa: 885, 
+        serasaProb: '96.2%',
+        serasaDividas: '0 (Nada Consta)',
+        serasaConsultas: '0 consultas',
+        serasaBtnText: 'Abrir Serasa Oficial (CNPJ Copiado)',
+        serasaBtnUrl: 'https://empresas.serasaexperian.com.br/',
+        boavista: 818, 
+        boavistaPontualidade: '99.1%',
+        boavistaFaturas: '0 (CENPROT)',
+        boavistaProtestos: '0 apontamentos',
+        boavistaBtnText: 'Abrir Boa Vista (CNPJ Copiado)',
+        boavistaBtnUrl: 'https://www.boavistaservicos.com.br/',
+        quod: 709, 
+        quodPositivo: 'Ativo e Regular',
+        quodHistorico: 'Zero Atrasos',
+        quodConformidade: 'BOM - SEM APONTAMENTOS',
+        quodBtnText: 'Acessar Quod (CNPJ Copiado)',
+        quodBtnUrl: 'https://www.quod.com.br/',
+        bacen: 'A1', 
+        bacenVencidos: 'R$ 0,00',
+        bacenPrejuizos: 'R$ 0,00 (Zero Prejuízo)',
+        bacenComp: 'Excelente (R$ 0,00 atraso)',
+        bacenBtnText: 'Acessar Registrato (e-CNPJ)',
+        bacenBtnUrl: 'https://registrato.bcb.gov.br/'
+      };
     }
-    return { serasa: 654, boavista: 716, quod: 682, bacen: 'A1', prob: '82.4%', atrasos: 'Zero Atrasos' };
+    return { 
+      serasa: 654, 
+      serasaProb: '82.4%',
+      serasaDividas: '0 (Nada Consta)',
+      serasaConsultas: '0 consultas',
+      serasaBtnText: 'Abrir Serasa Oficial (CPF Copiado)',
+      serasaBtnUrl: 'https://www.serasa.com.br/entrar?product=portal&redirectUrl=%2Farea-cliente%2Fsaude-financeira',
+      boavista: 716, 
+      boavistaPontualidade: '98.4%',
+      boavistaFaturas: '0 (CENPROT)',
+      boavistaProtestos: '0 apontamentos',
+      boavistaBtnText: 'Abrir Boa Vista (CPF Copiado)',
+      boavistaBtnUrl: 'https://www.consumidorpositivo.com.br/entrar/',
+      quod: 682, 
+      quodPositivo: 'Ativo (Cadastrado em 10/09/2026)',
+      quodHistorico: 'Zero Atrasos',
+      quodConformidade: 'BOM – SEM APONTAMENTOS NEGATIVOS',
+      quodBtnText: 'Acessar Quod (CPF Copiado)',
+      quodBtnUrl: 'https://consumidor.quod.com.br/',
+      bacen: 'A1', 
+      bacenVencidos: 'R$ 0,00',
+      bacenPrejuizos: 'R$ 0,00 (Zero Prejuízo)',
+      bacenComp: '(Excelente • 100% em dia)',
+      bacenBtnText: 'Acessar Registrato (e-CPF)',
+      bacenBtnUrl: 'https://registrato.bcb.gov.br/'
+    };
+  };
+
+  const handleUpdateBureauMetric = (bureauKey, metricField, value) => {
+    const activeClient = clients.find(c => c.id === selectedBureauClientId) || clients[0];
+    const current = getBureauDataForClient(activeClient);
+    const updated = {
+      ...bureauScoresMap,
+      [activeClient.id]: {
+        ...current,
+        [metricField]: value
+      }
+    };
+    setBureauScoresMap(updated);
+    try {
+      localStorage.setItem('mourato_bureau_scores_real_v1', JSON.stringify(updated));
+    } catch (_) {}
+    setBureauSyncClock(new Date().toLocaleTimeString('pt-BR'));
+  };
+
+  const handleStartEditClient = (client) => {
+    setEditingClientId(client.id);
+    setNewClient({
+      tipo: client.tipo || 'PJ',
+      nomeRazao: client.nomeRazao || '',
+      documento: client.documento || '',
+      documentoTipo: client.documentoTipo || (client.tipo === 'PJ' ? 'CNPJ' : 'CPF'),
+      natureza: client.natureza || '',
+      nire: client.nire || '',
+      socioVinculado: client.socioVinculado || '',
+      empresaVinculada: client.empresaVinculada || '',
+      profissao: client.profissao || '',
+      rg: client.rg || '',
+      responsavel: client.responsavel || '',
+      contato: client.contato || '',
+      email: client.email || '',
+      endereco: client.endereco || '',
+      cep: client.cep || '',
+      balanco: {
+        exercicio: client.balanco?.exercicio || '2026 (Auditado)',
+        ativo: client.balanco?.ativo || '',
+        patrimonioLiquido: client.balanco?.patrimonioLiquido || '',
+        capitalSocial: client.balanco?.capitalSocial || '',
+        faturamentoAnual: client.balanco?.faturamentoAnual || '',
+        contadorResponsavel: client.balanco?.contadorResponsavel || ''
+      },
+      rendaPatrimonio: {
+        proLabore: client.rendaPatrimonio?.proLabore || '',
+        bens: client.rendaPatrimonio?.bens || '',
+        veiculos: client.rendaPatrimonio?.veiculos || ''
+      },
+      contasBancarias: (client.contasBancarias && client.contasBancarias.length > 0)
+        ? client.contasBancarias.map(b => ({ ...b }))
+        : [
+            {
+              id: 1,
+              banco: client.tipo === 'PJ' ? 'Nu Pagamentos' : 'Itaú',
+              bancoOutro: '',
+              agencia: '0001',
+              conta: '',
+              senhaAcesso: '',
+              statusConta: 'Aberta e Operando',
+              origemCcs: ''
+            }
+          ],
+      serasaScore: client.serasaScore || (client.tipo === 'PJ' ? '885 (Excelente)' : '654 (Bom)'),
+      serasaStatus: client.serasaStatus || 'Sem Apontamentos',
+      boaVistaScore: client.boaVistaScore || 'Sem Restrições',
+      boaVistaStatus: client.boaVistaStatus || 'Sem Restrições',
+      govNivel: client.govNivel || 'Ouro',
+      govProtocolo: client.govProtocolo || '',
+      quodStatus: client.quodStatus || 'Positivo / Sem Restrição',
+      quodScore: client.quodScore || '682',
+      bacenScr: client.bacenScr || 'Rating A1',
+      limiteAprovado: client.limiteAprovado || '',
+      observacoesSigilosas: client.observacoesSigilosas || ''
+    });
+    setSelectedClient(null);
+    setActiveView('clients_new');
   };
 
   const showToast = (title, message) => {
@@ -262,6 +397,13 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
       `📋 ${bName}: Documento Copiado!`,
       `${targetClient.tipo === 'PJ' ? 'CNPJ' : 'CPF'} ${doc} copiado para a área de transferência. Basta colar na tela oficial de login.`
     );
+
+    const data = getBureauDataForClient(targetClient);
+    const customUrl = data[`${bureauKey}BtnUrl`];
+    if (customUrl && typeof customUrl === 'string' && customUrl.startsWith('http')) {
+      window.open(customUrl, '_blank');
+      return;
+    }
 
     let url = 'https://registrato.bcb.gov.br/';
     if (bureauKey === 'serasa') {
@@ -506,26 +648,48 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
     }));
   };
 
-  // Save Client Handler
+  // Save Client Handler (Suporta Adicionar Novo e Editar Existente)
   const handleSaveClient = (e) => {
     e.preventDefault();
     if (!newClient.nomeRazao.trim()) {
       alert(newClient.tipo === 'PJ' ? 'Por favor, informe a Razão Social da empresa.' : 'Por favor, informe o Nome Completo do sócio/pessoa física.');
       return;
     }
-    const created = {
-      ...newClient,
-      id: `cli-${newClient.tipo.toLowerCase()}-${Date.now()}`,
-      dataCadastro: new Date().toISOString().split('T')[0]
-    };
-    setClients([created, ...clients]);
+
+    if (editingClientId) {
+      // 1. EDITAR CLIENTE EXISTENTE
+      const updatedClients = clients.map(c => {
+        if (c.id === editingClientId) {
+          return {
+            ...c,
+            ...newClient,
+            id: editingClientId,
+            dataAtualizacao: new Date().toISOString().split('T')[0]
+          };
+        }
+        return c;
+      });
+      setClients(updatedClients);
+      showToast('✅ Cliente Atualizado!', `As alterações de "${newClient.nomeRazao}" foram gravadas com sucesso.`);
+      setEditingClientId(null);
+    } else {
+      // 2. ADICIONAR NOVO CLIENTE
+      const created = {
+        ...newClient,
+        id: `cli-${newClient.tipo.toLowerCase()}-${Date.now()}`,
+        dataCadastro: new Date().toISOString().split('T')[0]
+      };
+      setClients([created, ...clients]);
+      showToast('🎉 Cliente Cadastrado!', `"${newClient.nomeRazao}" foi adicionado com sucesso ao painel.`);
+    }
+
     setActiveView('clients_list');
     // Reset form
     setNewClient({
-      tipo: newClient.tipo,
+      tipo: 'PJ',
       nomeRazao: '',
       documento: '',
-      documentoTipo: newClient.tipo === 'PJ' ? 'CNPJ' : 'CPF',
+      documentoTipo: 'CNPJ',
       natureza: '',
       nire: '',
       socioVinculado: '',
@@ -553,7 +717,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
       contasBancarias: [
         {
           id: 1,
-          banco: newClient.tipo === 'PJ' ? 'Nu Pagamentos' : 'Itaú',
+          banco: 'Nu Pagamentos',
           bancoOutro: '',
           agencia: '0001',
           conta: '',
@@ -562,7 +726,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
           origemCcs: ''
         }
       ],
-      serasaScore: newClient.tipo === 'PJ' ? '885 (Excelente)' : 'Regular (Sem Restrições)',
+      serasaScore: '885 (Excelente)',
       serasaStatus: 'Sem Apontamentos',
       boaVistaScore: 'Sem Restrições',
       boaVistaStatus: 'Sem Restrições',
@@ -577,13 +741,20 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
     setShowFormPasswords({});
   };
 
-  // Delete Client Handler
+  // Delete Client Handler (Exclusão Segura com confirmação e limpeza)
   const handleDeleteClient = (id) => {
-    if (window.confirm('Confirma a remoção definitiva deste cadastro de cliente?')) {
-      setClients(clients.filter(c => c.id !== id));
+    const target = clients.find(c => c.id === id);
+    const targetName = target ? target.nomeRazao : 'este cliente';
+    if (window.confirm(`Confirma a exclusão definitiva do cadastro de "${targetName}"? Todos os vínculos e dados serão removidos.`)) {
+      const remaining = clients.filter(c => c.id !== id);
+      setClients(remaining);
       if (selectedClient && selectedClient.id === id) {
         setSelectedClient(null);
       }
+      if (selectedBureauClientId === id) {
+        setSelectedBureauClientId(remaining[0]?.id || 'cli-mourato-pj');
+      }
+      showToast('🗑️ Cadastro Excluído', `"${targetName}" foi removido com sucesso.`);
     }
   };
 
@@ -1728,6 +1899,31 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                   <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <button 
                       onClick={() => {
+                        setPrintModalType('all_clients');
+                        setPrintTargetClient(null);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.65rem 1.15rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'rgba(59, 130, 246, 0.15)',
+                        border: '1px solid rgba(59, 130, 246, 0.45)',
+                        color: '#60A5FA',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      title="Imprimir Relatório Executivo Geral de Todos os Clientes Cadastrados"
+                    >
+                      <Printer size={16} />
+                      Imprimir Tudo
+                    </button>
+
+                    <button 
+                      onClick={() => {
                         setSelectedBureauClientId(clients[0]?.id || 'cli-mourato-pj');
                         setActiveView('bureau_scores');
                       }}
@@ -1752,7 +1948,10 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                     </button>
 
                     <button 
-                      onClick={() => setActiveView('clients_new')}
+                      onClick={() => {
+                        setEditingClientId(null);
+                        setActiveView('clients_new');
+                      }}
                       className="btn-primary-gold"
                       style={{ padding: '0.65rem 1.3rem', fontSize: '0.82rem', gap: '0.5rem' }}
                     >
@@ -2042,6 +2241,27 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                             Birô
                           </button>
                           <button
+                            onClick={() => handleStartEditClient(client)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.55rem 0.75rem',
+                              fontSize: '0.78rem',
+                              borderRadius: 'var(--radius-sm)',
+                              background: 'rgba(197, 168, 105, 0.15)',
+                              border: '1px solid rgba(197, 168, 105, 0.4)',
+                              color: 'var(--gold-light)',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title="Editar dados e informações deste cliente"
+                          >
+                            <Edit2 size={13} />
+                            Editar
+                          </button>
+                          <button
                             onClick={() => setSelectedClient(client)}
                             className="btn-secondary-subtle"
                             style={{ flex: 1, padding: '0.55rem', fontSize: '0.78rem', justifyContent: 'center' }}
@@ -2087,35 +2307,56 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                 {/* Cabeçalho do Cadastro */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.75rem', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', paddingBottom: '1.25rem', flexWrap: 'wrap', gap: '1rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    {newClient.tipo === 'PJ' ? (
+                    {editingClientId ? (
+                      <Edit2 size={26} color="var(--gold-light)" />
+                    ) : newClient.tipo === 'PJ' ? (
                       <Building2 size={26} color="var(--gold-primary)" />
                     ) : (
                       <UserCheck size={26} color="#00B4FF" />
                     )}
                     <div>
                       <h2 style={{ fontSize: '1.25rem', color: '#FFFFFF', margin: 0 }}>
-                        {newClient.tipo === 'PJ' ? 'Cadastro de Empresa (Pessoa Jurídica - PJ)' : 'Cadastro de Sócio / Pessoa Física (PF)'}
+                        {editingClientId 
+                          ? `Editar Cadastro: ${newClient.nomeRazao || 'Cliente'}` 
+                          : newClient.tipo === 'PJ' ? 'Cadastro de Empresa (Pessoa Jurídica - PJ)' : 'Cadastro de Sócio / Pessoa Física (PF)'}
                       </h2>
                       <p style={{ fontSize: '0.76rem', color: '#94A3B8', margin: '3px 0 0' }}>
-                        {newClient.tipo === 'PJ' 
-                          ? 'Dossiê corporativo com balanço contábil, contas CCS Bacen e sócio administrador vinculado.' 
-                          : 'Dossiê pessoal com profissão, empresa vinculada, bens/veículos e bureaus individuais.'}
+                        {editingClientId
+                          ? 'Atualize os dados cadastrais, societários, balanço, contas bancárias ou scores e salve as alterações.'
+                          : newClient.tipo === 'PJ' 
+                            ? 'Dossiê corporativo com balanço contábil, contas CCS Bacen e sócio administrador vinculado.' 
+                            : 'Dossiê pessoal com profissão, empresa vinculada, bens/veículos e bureaus individuais.'}
                       </p>
                     </div>
                   </div>
 
                   {/* Badges de Auxílio */}
-                  <span style={{
-                    fontSize: '0.72rem',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '9999px',
-                    background: newClient.tipo === 'PJ' ? 'rgba(197, 168, 105, 0.15)' : 'rgba(0, 158, 227, 0.15)',
-                    border: newClient.tipo === 'PJ' ? '1px solid var(--gold-border)' : '1px solid rgba(0, 158, 227, 0.35)',
-                    color: newClient.tipo === 'PJ' ? 'var(--gold-light)' : '#38BDF8',
-                    fontWeight: 700
-                  }}>
-                    {newClient.tipo === 'PJ' ? '🏢 PERFIL CORPORATIVO' : '👤 PERFIL PESSOA FÍSICA'}
-                  </span>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    {editingClientId && (
+                      <span style={{
+                        fontSize: '0.72rem',
+                        padding: '0.25rem 0.75rem',
+                        borderRadius: '9999px',
+                        background: 'rgba(234, 179, 8, 0.2)',
+                        border: '1px solid rgba(234, 179, 8, 0.5)',
+                        color: '#FACC15',
+                        fontWeight: 700
+                      }}>
+                        ✏️ EDITANDO CADASTRO
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: '0.72rem',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '9999px',
+                      background: newClient.tipo === 'PJ' ? 'rgba(197, 168, 105, 0.15)' : 'rgba(0, 158, 227, 0.15)',
+                      border: newClient.tipo === 'PJ' ? '1px solid var(--gold-border)' : '1px solid rgba(0, 158, 227, 0.35)',
+                      color: newClient.tipo === 'PJ' ? 'var(--gold-light)' : '#38BDF8',
+                      fontWeight: 700
+                    }}>
+                      {newClient.tipo === 'PJ' ? '🏢 PERFIL CORPORATIVO' : '👤 PERFIL PESSOA FÍSICA'}
+                    </span>
+                  </div>
                 </div>
 
                 {/* SELETOR VISUAL OBRIGATÓRIO: PJ vs PF */}
@@ -3116,19 +3357,31 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                   <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
                     <button
                       type="button"
-                      onClick={() => setActiveView('clients_list')}
+                      onClick={() => {
+                        setEditingClientId(null);
+                        setActiveView('clients_list');
+                      }}
                       className="btn-secondary-subtle"
                       style={{ padding: '0.8rem 1.4rem' }}
                     >
-                      Cancelar
+                      {editingClientId ? 'Cancelar Edição' : 'Cancelar'}
                     </button>
                     <button
                       type="submit"
                       className="btn-primary-gold"
-                      style={{ padding: '0.8rem 2rem', fontSize: '0.86rem' }}
+                      style={{ padding: '0.8rem 2rem', fontSize: '0.86rem', gap: '0.5rem' }}
                     >
-                      Salvar Cadastro de {newClient.tipo === 'PJ' ? 'Empresa' : 'Sócio'}
-                      <Check size={16} />
+                      {editingClientId ? (
+                        <>
+                          <Save size={16} />
+                          Salvar Alterações do Cliente
+                        </>
+                      ) : (
+                        <>
+                          <Check size={16} />
+                          Salvar Cadastro de {newClient.tipo === 'PJ' ? 'Empresa' : 'Sócio'}
+                        </>
+                      )}
                     </button>
                   </div>
 
@@ -4189,7 +4442,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                     </h2>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
                     <span style={{
                       fontSize: '0.78rem',
                       fontFamily: 'monospace',
@@ -4206,6 +4459,55 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
                       Sincronizado em {bureauSyncClock}
                     </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setIsBureauEditMode(!isBureauEditMode)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.45rem 0.95rem',
+                        borderRadius: 'var(--radius-sm)',
+                        background: isBureauEditMode ? 'rgba(234, 179, 8, 0.25)' : 'rgba(197, 168, 105, 0.15)',
+                        border: isBureauEditMode ? '1px solid #EAB308' : '1px solid var(--gold-border)',
+                        color: isBureauEditMode ? '#FDE047' : 'var(--gold-light)',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      title="Ativar / desativar edição de métricas, textos e links dos 4 birôs de crédito"
+                    >
+                      {isBureauEditMode ? <Save size={14} /> : <Edit size={14} />}
+                      {isBureauEditMode ? 'Concluir Edição dos Birôs' : 'Editar Métricas & Botões'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPrintModalType('bureau_report');
+                        setPrintTargetClient(activeClient);
+                      }}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.45rem 0.95rem',
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'rgba(59, 130, 246, 0.15)',
+                        border: '1px solid rgba(59, 130, 246, 0.45)',
+                        color: '#60A5FA',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      title="Imprimir laudo pericial oficial dos birôs de crédito deste titular"
+                    >
+                      <Printer size={14} />
+                      Imprimir Laudo
+                    </button>
                   </div>
                 </div>
 
@@ -4482,20 +4784,75 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                       </div>
 
                       {/* Lista de Detalhes Periciais */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Probabilidade de Pagamento:</span>
-                          <strong style={{ color: '#34D399' }}>{bureauData.prob || (activeSerasa > 750 ? '94.8%' : '82.4%')}</strong>
+                      {isBureauEditMode ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem', background: '#070A10', padding: '0.75rem', borderRadius: 'var(--radius-xs)', border: '1px dashed rgba(225,29,72,0.45)' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FDA4AF', marginBottom: '0.2rem' }}>Probabilidade de Pagamento:</label>
+                            <input
+                              type="text"
+                              value={bureauData.serasaProb || ''}
+                              onChange={(e) => handleUpdateBureauMetric('serasa', 'serasaProb', e.target.value)}
+                              placeholder="Ex: 96.2%"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FDA4AF', marginBottom: '0.2rem' }}>Dívidas / Negativações:</label>
+                            <input
+                              type="text"
+                              value={bureauData.serasaDividas || ''}
+                              onChange={(e) => handleUpdateBureauMetric('serasa', 'serasaDividas', e.target.value)}
+                              placeholder="Ex: 0 (Nada Consta)"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FDA4AF', marginBottom: '0.2rem' }}>Consultas de Crédito (6m):</label>
+                            <input
+                              type="text"
+                              value={bureauData.serasaConsultas || ''}
+                              onChange={(e) => handleUpdateBureauMetric('serasa', 'serasaConsultas', e.target.value)}
+                              placeholder="Ex: 0 consultas"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FDA4AF', marginBottom: '0.2rem' }}>Texto do Botão:</label>
+                            <input
+                              type="text"
+                              value={bureauData.serasaBtnText || ''}
+                              onChange={(e) => handleUpdateBureauMetric('serasa', 'serasaBtnText', e.target.value)}
+                              placeholder={`Abrir Serasa Oficial (${activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})`}
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FDA4AF', marginBottom: '0.2rem' }}>Link do Botão (URL):</label>
+                            <input
+                              type="text"
+                              value={bureauData.serasaBtnUrl || ''}
+                              onChange={(e) => handleUpdateBureauMetric('serasa', 'serasaBtnUrl', e.target.value)}
+                              placeholder="https://empresas.serasaexperian.com.br/"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Dívidas / Negativações:</span>
-                          <strong style={{ color: '#34D399' }}>0 (Nada Consta)</strong>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Probabilidade de Pagamento:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.serasaProb || bureauData.prob || (activeSerasa > 750 ? '94.8%' : '82.4%')}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Dívidas / Negativações:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.serasaDividas || '0 (Nada Consta)'}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                            <span>Consultas de Crédito (6m):</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.serasaConsultas || '0 consultas'}</strong>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
-                          <span>Consultas de Crédito (6m):</span>
-                          <strong style={{ color: '#34D399' }}>0 consultas</strong>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Botões de Ação do Serasa */}
@@ -4521,7 +4878,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                         title="Abre o portal do Serasa em nova aba e copia CPF/CNPJ"
                       >
                         <ExternalLink size={14} />
-                        Abrir Serasa Oficial ({activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})
+                        {bureauData.serasaBtnText || `Abrir Serasa Oficial (${activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})`}
                       </button>
 
                       <button
@@ -4674,20 +5031,75 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                       </div>
 
                       {/* Lista de Detalhes Periciais */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Índice de Pontualidade:</span>
-                          <strong style={{ color: '#38BDF8' }}>98.4%</strong>
+                      {isBureauEditMode ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem', background: '#070A10', padding: '0.75rem', borderRadius: 'var(--radius-xs)', border: '1px dashed rgba(14,165,233,0.45)' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#38BDF8', marginBottom: '0.2rem' }}>Índice de Pontualidade:</label>
+                            <input
+                              type="text"
+                              value={bureauData.boavistaPontualidade || ''}
+                              onChange={(e) => handleUpdateBureauMetric('boavista', 'boavistaPontualidade', e.target.value)}
+                              placeholder="Ex: 98.4%"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#38BDF8', marginBottom: '0.2rem' }}>Status de Faturas Cartão:</label>
+                            <input
+                              type="text"
+                              value={bureauData.boavistaFaturas || ''}
+                              onChange={(e) => handleUpdateBureauMetric('boavista', 'boavistaFaturas', e.target.value)}
+                              placeholder="Ex: 0 (CENPROT)"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#38BDF8', marginBottom: '0.2rem' }}>Ações Cíveis / Protestos:</label>
+                            <input
+                              type="text"
+                              value={bureauData.boavistaProtestos || ''}
+                              onChange={(e) => handleUpdateBureauMetric('boavista', 'boavistaProtestos', e.target.value)}
+                              placeholder="Ex: 0 apontamentos"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#38BDF8', marginBottom: '0.2rem' }}>Texto do Botão:</label>
+                            <input
+                              type="text"
+                              value={bureauData.boavistaBtnText || ''}
+                              onChange={(e) => handleUpdateBureauMetric('boavista', 'boavistaBtnText', e.target.value)}
+                              placeholder={`Abrir Boa Vista (${activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})`}
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#38BDF8', marginBottom: '0.2rem' }}>Link do Botão (URL):</label>
+                            <input
+                              type="text"
+                              value={bureauData.boavistaBtnUrl || ''}
+                              onChange={(e) => handleUpdateBureauMetric('boavista', 'boavistaBtnUrl', e.target.value)}
+                              placeholder="https://www.boavistaservicos.com.br/"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Status de Faturas Cartão:</span>
-                          <strong style={{ color: '#34D399' }}>0 (CENPROT)</strong>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Índice de Pontualidade:</span>
+                            <strong style={{ color: '#38BDF8' }}>{bureauData.boavistaPontualidade || '98.4%'}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Status de Faturas Cartão:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.boavistaFaturas || '0 (CENPROT)'}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                            <span>Ações Cíveis / Protestos:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.boavistaProtestos || '0 apontamentos'}</strong>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
-                          <span>Ações Cíveis / Protestos:</span>
-                          <strong style={{ color: '#34D399' }}>0 apontamentos</strong>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Botões de Ação do Boa Vista */}
@@ -4713,7 +5125,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                         title="Abre o portal do Boa Vista em nova aba e copia CPF/CNPJ"
                       >
                         <ExternalLink size={14} />
-                        Abrir Boa Vista ({activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})
+                        {bureauData.boavistaBtnText || `Abrir Boa Vista (${activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})`}
                       </button>
 
                       <button
@@ -4866,20 +5278,75 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                       </div>
 
                       {/* Lista de Detalhes Periciais */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Cadastro Positivo:</span>
-                          <strong style={{ color: '#34D399' }}>Ativo (Cadastrado em 10/09/2026)</strong>
+                      {isBureauEditMode ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem', background: '#070A10', padding: '0.75rem', borderRadius: 'var(--radius-xs)', border: '1px dashed rgba(16,185,129,0.45)' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#34D399', marginBottom: '0.2rem' }}>Cadastro Positivo:</label>
+                            <input
+                              type="text"
+                              value={bureauData.quodPositivo || ''}
+                              onChange={(e) => handleUpdateBureauMetric('quod', 'quodPositivo', e.target.value)}
+                              placeholder="Ex: Ativo e Regular"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#34D399', marginBottom: '0.2rem' }}>Histórico 36 meses:</label>
+                            <input
+                              type="text"
+                              value={bureauData.quodHistorico || ''}
+                              onChange={(e) => handleUpdateBureauMetric('quod', 'quodHistorico', e.target.value)}
+                              placeholder="Ex: Zero Atrasos"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#34D399', marginBottom: '0.2rem' }}>Conformidade Bacen:</label>
+                            <input
+                              type="text"
+                              value={bureauData.quodConformidade || ''}
+                              onChange={(e) => handleUpdateBureauMetric('quod', 'quodConformidade', e.target.value)}
+                              placeholder="Ex: BOM – SEM APONTAMENTOS"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#34D399', marginBottom: '0.2rem' }}>Texto do Botão:</label>
+                            <input
+                              type="text"
+                              value={bureauData.quodBtnText || ''}
+                              onChange={(e) => handleUpdateBureauMetric('quod', 'quodBtnText', e.target.value)}
+                              placeholder={`Acessar Quod (${activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})`}
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#34D399', marginBottom: '0.2rem' }}>Link do Botão (URL):</label>
+                            <input
+                              type="text"
+                              value={bureauData.quodBtnUrl || ''}
+                              onChange={(e) => handleUpdateBureauMetric('quod', 'quodBtnUrl', e.target.value)}
+                              placeholder="https://www.quod.com.br/"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Histórico 36 meses:</span>
-                          <strong style={{ color: '#34D399' }}>Zero Atrasos</strong>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Cadastro Positivo:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.quodPositivo || 'Ativo e Regular'}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Histórico 36 meses:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.quodHistorico || 'Zero Atrasos'}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                            <span>Conformidade Bacen:</span>
+                            <strong style={{ color: '#FFFFFF' }}>{bureauData.quodConformidade || 'BOM – SEM APONTAMENTOS'}</strong>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
-                          <span>Conformidade Bacen:</span>
-                          <strong style={{ color: '#FFFFFF' }}>BOM – SEM APONTAMENTOS</strong>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Botão de Ação do Quod */}
@@ -4906,7 +5373,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                         title="Abre o portal da Quod Consumidor/Empresas com documento copiado"
                       >
                         <ExternalLink size={14} />
-                        Acessar Quod ({activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})
+                        {bureauData.quodBtnText || `Acessar Quod (${activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})`}
                       </button>
                     </div>
                   </div>
@@ -4997,25 +5464,118 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                         fontSize: '0.72rem',
                         color: '#CBD5E1'
                       }}>
-                        <span style={{ color: '#FBBF24', fontWeight: 700 }}>Certificação Gov.br: </span>
-                        Nível Ouro Ativo (Acesso via Certificado e-CNPJ / e-CPF)
+                        {isBureauEditMode ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <span style={{ color: '#FBBF24', fontWeight: 700 }}>Rating Bacen:</span>
+                              <select
+                                value={activeBacen}
+                                onChange={(e) => handleUpdateBureauMetric('bacen', 'bacen', e.target.value)}
+                                style={{
+                                  background: '#0F1626',
+                                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                                  color: '#FBBF24',
+                                  borderRadius: '4px',
+                                  padding: '0.2rem 0.5rem',
+                                  fontWeight: 800,
+                                  fontSize: '0.75rem'
+                                }}
+                              >
+                                <option value="A1">A1 (Prime Rate)</option>
+                                <option value="A">A (Excelente)</option>
+                                <option value="B1">B1 (Normal)</option>
+                                <option value="B">B (Estável)</option>
+                                <option value="C">C (Monitoramento)</option>
+                              </select>
+                            </div>
+                            <div>
+                              <span style={{ color: '#FBBF24', fontWeight: 700 }}>Certificação Gov.br:</span>
+                              <input
+                                type="text"
+                                value={bureauData.bacenGov || 'Nível Ouro Ativo (Acesso via Certificado e-CNPJ / e-CPF)'}
+                                onChange={(e) => handleUpdateBureauMetric('bacen', 'bacenGov', e.target.value)}
+                                style={{ width: '100%', marginTop: '0.2rem', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.74rem' }}
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <span style={{ color: '#FBBF24', fontWeight: 700 }}>Certificação Gov.br: </span>
+                            {bureauData.bacenGov || 'Nível Ouro Ativo (Acesso via Certificado e-CNPJ / e-CPF)'}
+                          </>
+                        )}
                       </div>
 
                       {/* Lista de Detalhes Periciais */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Operações Vencidas:</span>
-                          <strong style={{ color: '#34D399' }}>R$ 0,00</strong>
+                      {isBureauEditMode ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem', background: '#070A10', padding: '0.75rem', borderRadius: 'var(--radius-xs)', border: '1px dashed rgba(245,158,11,0.45)' }}>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FBBF24', marginBottom: '0.2rem' }}>Operações Vencidas:</label>
+                            <input
+                              type="text"
+                              value={bureauData.bacenVencidos || ''}
+                              onChange={(e) => handleUpdateBureauMetric('bacen', 'bacenVencidos', e.target.value)}
+                              placeholder="Ex: R$ 0,00"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FBBF24', marginBottom: '0.2rem' }}>Prejuízos (3020/3030):</label>
+                            <input
+                              type="text"
+                              value={bureauData.bacenPrejuizos || ''}
+                              onChange={(e) => handleUpdateBureauMetric('bacen', 'bacenPrejuizos', e.target.value)}
+                              placeholder="Ex: R$ 0,00 (Zero Prejuízo)"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FBBF24', marginBottom: '0.2rem' }}>Comprometimento Total:</label>
+                            <input
+                              type="text"
+                              value={bureauData.bacenComp || ''}
+                              onChange={(e) => handleUpdateBureauMetric('bacen', 'bacenComp', e.target.value)}
+                              placeholder="Ex: (Excelente • 100% em dia)"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FBBF24', marginBottom: '0.2rem' }}>Texto do Botão:</label>
+                            <input
+                              type="text"
+                              value={bureauData.bacenBtnText || ''}
+                              onChange={(e) => handleUpdateBureauMetric('bacen', 'bacenBtnText', e.target.value)}
+                              placeholder={`Acessar Registrato (${activeClient?.tipo === 'PJ' ? 'e-CNPJ' : 'e-CPF'})`}
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
+                          <div>
+                            <label style={{ display: 'block', fontSize: '0.68rem', color: '#FBBF24', marginBottom: '0.2rem' }}>Link do Botão (URL):</label>
+                            <input
+                              type="text"
+                              value={bureauData.bacenBtnUrl || ''}
+                              onChange={(e) => handleUpdateBureauMetric('bacen', 'bacenBtnUrl', e.target.value)}
+                              placeholder="https://registrato.bcb.gov.br/"
+                              style={{ width: '100%', background: '#0F1626', border: '1px solid rgba(255,255,255,0.12)', color: '#FFFFFF', padding: '0.3rem 0.5rem', borderRadius: '4px', fontSize: '0.76rem' }}
+                            />
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
-                          <span>Prejuízos (3020/3030):</span>
-                          <strong style={{ color: '#34D399' }}>R$ 0,00 (Zero Prejuízo)</strong>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Operações Vencidas:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.bacenVencidos || 'R$ 0,00'}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                            <span>Prejuízos (3020/3030):</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.bacenPrejuizos || 'R$ 0,00 (Zero Prejuízo)'}</strong>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                            <span>Comprometimento Total:</span>
+                            <strong style={{ color: '#34D399' }}>{bureauData.bacenComp || '(Excelente • 100% em dia)'}</strong>
+                          </div>
                         </div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
-                          <span>Comprometimento Total:</span>
-                          <strong style={{ color: '#34D399' }}>(Excelente • 100% em dia)</strong>
-                        </div>
-                      </div>
+                      )}
                     </div>
 
                     {/* Botão de Ação do Bacen */}
@@ -5042,7 +5602,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                         title="Abre o Registrato do Banco Central com documento copiado"
                       >
                         <ExternalLink size={14} />
-                        Acessar Registrato ({activeClient?.tipo === 'PJ' ? 'e-CNPJ' : 'e-CPF'})
+                        {bureauData.bacenBtnText || `Acessar Registrato (${activeClient?.tipo === 'PJ' ? 'e-CNPJ' : 'e-CPF'})`}
                       </button>
                     </div>
                   </div>
@@ -5403,6 +5963,52 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
               </button>
               <button
                 onClick={() => {
+                  const targetClient = selectedClient;
+                  handleStartEditClient(targetClient);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 1.25rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(197, 168, 105, 0.15)',
+                  border: '1px solid rgba(197, 168, 105, 0.45)',
+                  color: 'var(--gold-light)',
+                  cursor: 'pointer'
+                }}
+                title="Editar os dados cadastrais deste cliente"
+              >
+                <Edit2 size={15} />
+                Editar Cadastro
+              </button>
+              <button
+                onClick={() => {
+                  setPrintModalType('single_client');
+                  setPrintTargetClient(selectedClient);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 1.25rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(59, 130, 246, 0.15)',
+                  border: '1px solid rgba(59, 130, 246, 0.45)',
+                  color: '#60A5FA',
+                  cursor: 'pointer'
+                }}
+                title="Imprimir relatório/dossiê completo deste cliente"
+              >
+                <Printer size={15} />
+                Imprimir Dossiê
+              </button>
+              <button
+                onClick={() => {
                   const clientToCharge = selectedClient;
                   setSelectedClient(null);
                   handleOpenNewCharge(clientToCharge);
@@ -5412,6 +6018,26 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
               >
                 <CreditCard size={15} />
                 Emitir Cobrança
+              </button>
+              <button
+                onClick={() => handleDeleteClient(selectedClient.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.65rem 1rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(239, 68, 68, 0.12)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#F87171',
+                  cursor: 'pointer'
+                }}
+                title="Excluir este cadastro do painel"
+              >
+                <Trash2 size={15} />
+                Excluir
               </button>
               <button
                 onClick={() => setSelectedClient(null)}
@@ -6261,6 +6887,524 @@ Mourato & Associados Ltda
                 >
                   Fechar
                 </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL GLOBAL DE IMPRESSÃO / RELATÓRIO EXECUTIVO      */}
+      {/* ---------------------------------------------------- */}
+      {printModalType && (() => {
+        const targetClient = printTargetClient || selectedClient || clients.find(c => c.id === selectedBureauClientId) || clients[0];
+        const pjClients = clients.filter(c => c.tipo === 'PJ');
+        const pfClients = clients.filter(c => c.tipo !== 'PJ');
+        const targetBureau = targetClient ? getBureauDataForClient(targetClient) : null;
+
+        return (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5, 7, 12, 0.92)',
+            backdropFilter: 'blur(10px)',
+            zIndex: 3000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem',
+            overflowY: 'auto'
+          }}>
+            <style>{`
+              @media print {
+                body * {
+                  visibility: hidden !important;
+                }
+                #mourato-print-area, #mourato-print-area * {
+                  visibility: visible !important;
+                }
+                #mourato-print-area {
+                  position: absolute !important;
+                  left: 0 !important;
+                  top: 0 !important;
+                  width: 100% !important;
+                  margin: 0 !important;
+                  padding: 24px !important;
+                  background: #ffffff !important;
+                  color: #000000 !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                }
+                .mourato-no-print {
+                  display: none !important;
+                }
+                .print-table th, .print-table td {
+                  border: 1px solid #cbd5e1 !important;
+                  color: #0f172a !important;
+                }
+                .print-card {
+                  border: 1px solid #cbd5e1 !important;
+                  background: #f8fafc !important;
+                  color: #0f172a !important;
+                }
+                .print-header {
+                  border-bottom: 2px solid #0f172a !important;
+                  color: #0f172a !important;
+                }
+                .print-accent {
+                  color: #946c15 !important;
+                }
+              }
+            `}</style>
+
+            <div style={{
+              background: '#0B0F19',
+              border: '1px solid var(--gold-border)',
+              borderRadius: 'var(--radius-md)',
+              maxWidth: '960px',
+              width: '100%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(197, 168, 105, 0.2)'
+            }}>
+              {/* Barra de Ações Superior (Não sai na impressão) */}
+              <div className="mourato-no-print" style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '1rem 1.75rem',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                background: '#06090F',
+                position: 'sticky',
+                top: 0,
+                zIndex: 10
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <Printer size={18} color="var(--gold-primary)" />
+                  <strong style={{ color: '#FFFFFF', fontSize: '0.95rem' }}>
+                    {printModalType === 'all_clients' && 'Pré-visualização: Relatório Geral de Todos os Clientes'}
+                    {printModalType === 'single_client' && `Pré-visualização: Dossiê Executivo de ${targetClient?.nomeRazao}`}
+                    {printModalType === 'bureau_report' && `Pré-visualização: Laudo Oficial dos Birôs de Crédito`}
+                  </strong>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      padding: '0.55rem 1.25rem',
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'linear-gradient(135deg, #C5A869 0%, #B39355 100%)',
+                      border: 'none',
+                      color: '#0A0E17',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 14px rgba(197, 168, 105, 0.35)'
+                    }}
+                  >
+                    <Printer size={15} />
+                    Imprimir / Gerar PDF
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPrintModalType(null)}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      color: '#94A3B8',
+                      padding: '0.55rem 1rem',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+
+              {/* Área Imprimível com ID #mourato-print-area */}
+              <div id="mourato-print-area" style={{ padding: '2.5rem', background: '#0D121D', color: '#E2E8F0', fontSize: '0.85rem' }}>
+                
+                {/* Cabeçalho Institucional Padrão */}
+                <div className="print-header" style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  borderBottom: '2px solid rgba(197, 168, 105, 0.35)',
+                  paddingBottom: '1.25rem',
+                  marginBottom: '1.75rem',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}>
+                  <div>
+                    <h1 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--gold-light)', margin: 0, letterSpacing: '0.04em' }}>
+                      MOURATO &amp; ASSOCIADOS
+                    </h1>
+                    <div style={{ fontSize: '0.74rem', color: '#94A3B8', marginTop: '0.2rem' }}>
+                      Assessoria Pericial, Recuperação de Crédito &amp; Inteligência Financeira
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#64748B', marginTop: '0.15rem' }}>
+                      CNPJ: 38.377.738/0001-45 • São Paulo - SP • www.mouratoassociados.com.br
+                    </div>
+                  </div>
+
+                  <div style={{ textAlign: 'right', fontSize: '0.74rem', color: '#94A3B8' }}>
+                    <div style={{ fontWeight: 700, color: '#FFFFFF' }}>DOCUMENTO CONFIDENCIAL</div>
+                    <div>Emissão: {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}</div>
+                    <div>Auditoria: Sistema Executivo Homologado</div>
+                  </div>
+                </div>
+
+                {/* CASO 1: RELATÓRIO GERAL DE TODOS OS CLIENTES */}
+                {printModalType === 'all_clients' && (
+                  <div>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <h2 style={{ fontSize: '1.25rem', color: '#FFFFFF', margin: '0 0 0.35rem', fontWeight: 800 }}>
+                        Relatório Executivo Geral de Clientes e Relações Societárias
+                      </h2>
+                      <p style={{ fontSize: '0.78rem', color: '#94A3B8', margin: 0 }}>
+                        Listagem completa contendo todas as empresas (PJ) e sócios (PF) cadastrados na plataforma com seus respectivos dados bancários e de birôs.
+                      </p>
+                    </div>
+
+                    {/* Resumo Numérico (Cards) */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.85rem', marginBottom: '2rem' }}>
+                      <div className="print-card" style={{ background: '#070A10', padding: '0.85rem', borderRadius: 'var(--radius-xs)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#94A3B8', display: 'block' }}>TOTAL CLIENTES</span>
+                        <strong style={{ fontSize: '1.35rem', color: '#FFFFFF' }}>{clients.length}</strong>
+                      </div>
+                      <div className="print-card" style={{ background: '#070A10', padding: '0.85rem', borderRadius: 'var(--radius-xs)', border: '1px solid rgba(197, 168, 105, 0.25)' }}>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', display: 'block' }}>EMPRESAS (PJ)</span>
+                        <strong style={{ fontSize: '1.35rem', color: 'var(--gold-light)' }}>{pjClients.length}</strong>
+                      </div>
+                      <div className="print-card" style={{ background: '#070A10', padding: '0.85rem', borderRadius: 'var(--radius-xs)', border: '1px solid rgba(0, 158, 227, 0.25)' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#38BDF8', display: 'block' }}>SÓCIOS (PF)</span>
+                        <strong style={{ fontSize: '1.35rem', color: '#38BDF8' }}>{pfClients.length}</strong>
+                      </div>
+                      <div className="print-card" style={{ background: '#070A10', padding: '0.85rem', borderRadius: 'var(--radius-xs)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                        <span style={{ fontSize: '0.7rem', color: '#34D399', display: 'block' }}>ESTRUTURA BACEN</span>
+                        <strong style={{ fontSize: '1.15rem', color: '#34D399' }}>100% Auditada</strong>
+                      </div>
+                    </div>
+
+                    {/* SEÇÃO 1: EMPRESAS (PJ) */}
+                    <div style={{ marginBottom: '2.5rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+                        <Building2 size={18} color="var(--gold-primary)" />
+                        <h3 style={{ fontSize: '1rem', color: 'var(--gold-light)', margin: 0, fontWeight: 700 }}>
+                          1. Carteira de Empresas (Pessoas Jurídicas - PJ) [{pjClients.length}]
+                        </h3>
+                      </div>
+
+                      <table className="print-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: '#070A10', borderBottom: '1px solid var(--gold-border)' }}>
+                            <th style={{ padding: '0.65rem 0.6rem', color: 'var(--gold-light)' }}>Razão Social</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: 'var(--gold-light)' }}>CNPJ</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: 'var(--gold-light)' }}>Sócio Administrador</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: 'var(--gold-light)' }}>Ativo / PL</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: 'var(--gold-light)' }}>Contas CCS</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: 'var(--gold-light)' }}>Bacen SCR</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: 'var(--gold-light)' }}>Serasa</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pjClients.map((c, idx) => (
+                            <tr key={c.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)' }}>
+                              <td style={{ padding: '0.6rem', fontWeight: 700, color: '#FFFFFF' }}>{c.nomeRazao}</td>
+                              <td style={{ padding: '0.6rem', fontFamily: 'monospace' }}>{c.documento}</td>
+                              <td style={{ padding: '0.6rem' }}>{c.socioVinculado || c.responsavel || '-'}</td>
+                              <td style={{ padding: '0.6rem' }}>{c.balanco?.ativo ? `${c.balanco.ativo}` : '-'}</td>
+                              <td style={{ padding: '0.6rem' }}>
+                                {c.contasBancarias?.map((b, bIdx) => (
+                                  <span key={bIdx} style={{ display: 'inline-block', marginRight: '0.35rem' }}>
+                                    {b.banco} {b.origemCcs ? '[CCS]' : ''}
+                                  </span>
+                                )) || '-'}
+                              </td>
+                              <td style={{ padding: '0.6rem', color: '#34D399', fontWeight: 600 }}>{c.bacenScr ? c.bacenScr.split(' ')[0] : 'A1'}</td>
+                              <td style={{ padding: '0.6rem' }}>{c.serasaScore || '885'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* SEÇÃO 2: SÓCIOS (PF) */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.85rem' }}>
+                        <UserCheck size={18} color="#00B4FF" />
+                        <h3 style={{ fontSize: '1rem', color: '#38BDF8', margin: 0, fontWeight: 700 }}>
+                          2. Carteira de Sócios &amp; Pessoas Físicas (PF) [{pfClients.length}]
+                        </h3>
+                      </div>
+
+                      <table className="print-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: '#070A10', borderBottom: '1px solid rgba(0, 158, 227, 0.4)' }}>
+                            <th style={{ padding: '0.65rem 0.6rem', color: '#38BDF8' }}>Nome Completo</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: '#38BDF8' }}>CPF</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: '#38BDF8' }}>Empresa Vinculada</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: '#38BDF8' }}>Cargo / Profissão</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: '#38BDF8' }}>Bens / Veículos</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: '#38BDF8' }}>Bacen</th>
+                            <th style={{ padding: '0.65rem 0.6rem', color: '#38BDF8' }}>Serasa</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {pfClients.map((c, idx) => (
+                            <tr key={c.id || idx} style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.05)', background: idx % 2 === 0 ? 'transparent' : 'rgba(255, 255, 255, 0.015)' }}>
+                              <td style={{ padding: '0.6rem', fontWeight: 700, color: '#FFFFFF' }}>{c.nomeRazao}</td>
+                              <td style={{ padding: '0.6rem', fontFamily: 'monospace' }}>{c.documento}</td>
+                              <td style={{ padding: '0.6rem' }}>{c.empresaVinculada || 'Mourato & Associados Ltda'}</td>
+                              <td style={{ padding: '0.6rem' }}>{c.profissao || 'Sócio'}</td>
+                              <td style={{ padding: '0.6rem' }}>{c.rendaPatrimonio?.veiculos || '-'}</td>
+                              <td style={{ padding: '0.6rem', color: '#34D399', fontWeight: 600 }}>{c.bacenScr ? c.bacenScr.split(' ')[0] : 'A1'}</td>
+                              <td style={{ padding: '0.6rem' }}>{c.serasaScore || '654'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* CASO 2: DOSSIÊ INDIVIDUAL COMPLETO DO CLIENTE */}
+                {printModalType === 'single_client' && targetClient && (
+                  <div>
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <span style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: targetClient.tipo === 'PJ' ? 'var(--gold-light)' : '#38BDF8', fontWeight: 800 }}>
+                        {targetClient.tipo === 'PJ' ? '🏢 DOSSIÊ CORPORATIVO • PESSOA JURÍDICA' : '👤 DOSSIÊ INDIVIDUAL • PESSOA FÍSICA'}
+                      </span>
+                      <h2 style={{ fontSize: '1.45rem', color: '#FFFFFF', margin: '0.35rem 0 0.2rem', fontWeight: 800 }}>
+                        {targetClient.nomeRazao}
+                      </h2>
+                      <div style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+                        {targetClient.tipo === 'PJ' ? 'CNPJ' : 'CPF'}: <strong style={{ color: '#FFFFFF' }}>{targetClient.documento}</strong>
+                        {targetClient.nire && <span> • NIRE: {targetClient.nire}</span>}
+                        {targetClient.natureza && <span> • Natureza: {targetClient.natureza}</span>}
+                      </div>
+                    </div>
+
+                    {/* Bloco de Vínculo Societário & Contábil */}
+                    <div className="print-card" style={{ background: '#070A10', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--gold-light)', fontWeight: 700, marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                        Estrutura Societária &amp; Econômica
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem', fontSize: '0.78rem' }}>
+                        <div>
+                          <span style={{ color: '#94A3B8', display: 'block' }}>{targetClient.tipo === 'PJ' ? 'Sócio Administrador:' : 'Empresa Vinculada:'}</span>
+                          <strong style={{ color: '#FFFFFF' }}>{targetClient.tipo === 'PJ' ? (targetClient.socioVinculado || targetClient.responsavel || 'José Jailson Mourato') : (targetClient.empresaVinculada || 'Mourato & Associados Ltda')}</strong>
+                        </div>
+                        {targetClient.tipo === 'PJ' && targetClient.balanco && (
+                          <>
+                            <div>
+                              <span style={{ color: '#94A3B8', display: 'block' }}>Ativo Total:</span>
+                              <strong style={{ color: '#34D399' }}>{targetClient.balanco.ativo || '-'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94A3B8', display: 'block' }}>Patrimônio Líquido:</span>
+                              <strong style={{ color: '#34D399' }}>{targetClient.balanco.patrimonioLiquido || '-'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94A3B8', display: 'block' }}>Capital Social:</span>
+                              <strong style={{ color: '#FFFFFF' }}>{targetClient.balanco.capitalSocial || '-'}</strong>
+                            </div>
+                          </>
+                        )}
+                        {targetClient.tipo === 'PF' && (
+                          <>
+                            <div>
+                              <span style={{ color: '#94A3B8', display: 'block' }}>Cargo / Ocupação:</span>
+                              <strong style={{ color: '#FFFFFF' }}>{targetClient.profissao || 'Sócio'}</strong>
+                            </div>
+                            <div>
+                              <span style={{ color: '#94A3B8', display: 'block' }}>Veículos / Bens:</span>
+                              <strong style={{ color: '#FFFFFF' }}>{targetClient.rendaPatrimonio?.veiculos || '-'}</strong>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Bloco de Contas Bancárias Homologadas */}
+                    <div className="print-card" style={{ background: '#070A10', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--gold-light)', fontWeight: 700, marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                        Estrutura Bancária &amp; Cadastro CCS Bacen ({targetClient.contasBancarias?.length || 1} Contas)
+                      </div>
+                      <table className="print-table" style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.76rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+                            <th style={{ padding: '0.5rem', color: '#94A3B8' }}>Instituição Financeira</th>
+                            <th style={{ padding: '0.5rem', color: '#94A3B8' }}>Agência</th>
+                            <th style={{ padding: '0.5rem', color: '#94A3B8' }}>Conta Corrente</th>
+                            <th style={{ padding: '0.5rem', color: '#94A3B8' }}>Status</th>
+                            <th style={{ padding: '0.5rem', color: '#94A3B8' }}>CCS Bacen</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {targetClient.contasBancarias?.map((b, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                              <td style={{ padding: '0.5rem', fontWeight: 600, color: '#FFFFFF' }}>{b.banco === 'Outro' ? b.bancoOutro : b.banco}</td>
+                              <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{b.agencia}</td>
+                              <td style={{ padding: '0.5rem', fontFamily: 'monospace' }}>{b.conta || 'Operando'}</td>
+                              <td style={{ padding: '0.5rem', color: '#34D399' }}>{b.statusConta || 'Ativa'}</td>
+                              <td style={{ padding: '0.5rem', color: b.origemCcs ? '#34D399' : '#94A3B8' }}>{b.origemCcs || 'Homologada'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Bloco de Birôs e Órgãos Reguladores */}
+                    <div className="print-card" style={{ background: '#070A10', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-sm)', padding: '1.25rem', marginBottom: '1.5rem' }}>
+                      <div style={{ fontSize: '0.76rem', color: 'var(--gold-light)', fontWeight: 700, marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                        Status Pericial nos Birôs Oficiais &amp; Banco Central
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.85rem', fontSize: '0.78rem' }}>
+                        <div style={{ border: '1px solid rgba(225,29,72,0.3)', padding: '0.75rem', borderRadius: '4px' }}>
+                          <span style={{ color: '#FB7185', fontWeight: 700, display: 'block' }}>SERASA EXPERIAN</span>
+                          <strong style={{ fontSize: '1.2rem', color: '#FFFFFF' }}>{targetBureau?.serasa || targetClient.serasaScore || 885}</strong>
+                          <span style={{ fontSize: '0.68rem', color: '#94A3B8', display: 'block' }}>{targetBureau?.serasaProb || '96.2%'} pontualidade</span>
+                        </div>
+                        <div style={{ border: '1px solid rgba(14,165,233,0.3)', padding: '0.75rem', borderRadius: '4px' }}>
+                          <span style={{ color: '#38BDF8', fontWeight: 700, display: 'block' }}>BOA VISTA SCPC</span>
+                          <strong style={{ fontSize: '1.2rem', color: '#FFFFFF' }}>{targetBureau?.boavista || 818}</strong>
+                          <span style={{ fontSize: '0.68rem', color: '#94A3B8', display: 'block' }}>{targetBureau?.boavistaPontualidade || '98.4%'} pontualidade</span>
+                        </div>
+                        <div style={{ border: '1px solid rgba(16,185,129,0.3)', padding: '0.75rem', borderRadius: '4px' }}>
+                          <span style={{ color: '#34D399', fontWeight: 700, display: 'block' }}>QUOD POSITIVO</span>
+                          <strong style={{ fontSize: '1.2rem', color: '#FFFFFF' }}>{targetBureau?.quod || 709}</strong>
+                          <span style={{ fontSize: '0.68rem', color: '#94A3B8', display: 'block' }}>{targetBureau?.quodHistorico || 'Zero Atrasos'}</span>
+                        </div>
+                        <div style={{ border: '1px solid rgba(245,158,11,0.3)', padding: '0.75rem', borderRadius: '4px' }}>
+                          <span style={{ color: '#FBBF24', fontWeight: 700, display: 'block' }}>BACEN SCR</span>
+                          <strong style={{ fontSize: '1.2rem', color: '#FBBF24' }}>{targetBureau?.bacen || 'A1'}</strong>
+                          <span style={{ fontSize: '0.68rem', color: '#94A3B8', display: 'block' }}>Rating Prime Rate</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Limite de Crédito & Parecer */}
+                    <div style={{ background: 'rgba(197, 168, 105, 0.08)', border: '1px solid rgba(197, 168, 105, 0.3)', padding: '1rem', borderRadius: 'var(--radius-sm)' }}>
+                      <span style={{ color: 'var(--gold-light)', fontWeight: 700, fontSize: '0.76rem', textTransform: 'uppercase' }}>
+                        Parecer Pericial Conclusivo
+                      </span>
+                      <p style={{ margin: '0.4rem 0 0', fontSize: '0.78rem', color: '#E2E8F0', lineHeight: 1.5 }}>
+                        O titular encontra-se com estrutura documental e bancária plenamente validada, apto para operações de estruturação de dívida, capital de giro e mitigação de spread bancário. Limite de Crédito Referencial: <strong style={{ color: 'var(--gold-light)' }}>{targetClient.limiteAprovado || 'R$ 1.450.000,00'}</strong>.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* CASO 3: LAUDO PERICIAL OFICIAL DOS BIRÔS */}
+                {printModalType === 'bureau_report' && targetClient && targetBureau && (
+                  <div>
+                    <div style={{ marginBottom: '1.75rem' }}>
+                      <span style={{ fontSize: '0.72rem', letterSpacing: '0.12em', color: '#10B981', fontWeight: 800 }}>
+                        AUDITORIA PERICIAL INTEGRADA DE BIRÔS DE CRÉDITO
+                      </span>
+                      <h2 style={{ fontSize: '1.45rem', color: '#FFFFFF', margin: '0.35rem 0 0.2rem', fontWeight: 800 }}>
+                        Laudo de Higidez Cadastral: {targetClient.nomeRazao}
+                      </h2>
+                      <div style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+                        Titular: <strong style={{ color: '#FFFFFF' }}>{targetClient.nomeRazao}</strong> • {targetClient.tipo === 'PJ' ? 'CNPJ' : 'CPF'}: <strong style={{ color: '#FFFFFF' }}>{targetClient.documento}</strong> • Categoria: <strong>{targetClient.tipo === 'PJ' ? 'Pessoa Jurídica' : 'Pessoa Física'}</strong>
+                      </div>
+                    </div>
+
+                    {/* 4 Quadrantes Auditados */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', marginBottom: '1.75rem' }}>
+                      
+                      {/* 1. SERASA */}
+                      <div className="print-card" style={{ background: '#070A10', border: '1px solid rgba(225,29,72,0.3)', borderRadius: 'var(--radius-sm)', padding: '1.15rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ color: '#FB7185', fontWeight: 800 }}>SERASA EXPERIAN</span>
+                          <span style={{ fontSize: '0.7rem', color: '#34D399', fontWeight: 700 }}>AUDITADO</span>
+                        </div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '0.5rem' }}>
+                          {targetBureau.serasa} <span style={{ fontSize: '0.8rem', color: '#64748B' }}>/ 1000</span>
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: '#94A3B8', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div>Probabilidade de Pagamento: <strong style={{ color: '#34D399' }}>{targetBureau.serasaProb || '96.2%'}</strong></div>
+                          <div>Dívidas / Negativações: <strong style={{ color: '#34D399' }}>{targetBureau.serasaDividas || '0 (Nada Consta)'}</strong></div>
+                          <div>Consultas de Crédito (6m): <strong style={{ color: '#FFFFFF' }}>{targetBureau.serasaConsultas || '0 consultas'}</strong></div>
+                        </div>
+                      </div>
+
+                      {/* 2. BOA VISTA */}
+                      <div className="print-card" style={{ background: '#070A10', border: '1px solid rgba(14,165,233,0.3)', borderRadius: 'var(--radius-sm)', padding: '1.15rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ color: '#38BDF8', fontWeight: 800 }}>BOA VISTA SCPC (EQUIFAX)</span>
+                          <span style={{ fontSize: '0.7rem', color: '#34D399', fontWeight: 700 }}>FAIXA A</span>
+                        </div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '0.5rem' }}>
+                          {targetBureau.boavista} <span style={{ fontSize: '0.8rem', color: '#64748B' }}>/ 1000</span>
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: '#94A3B8', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div>Índice de Pontualidade: <strong style={{ color: '#38BDF8' }}>{targetBureau.boavistaPontualidade || '98.4%'}</strong></div>
+                          <div>Status de Faturas Cartão: <strong style={{ color: '#34D399' }}>{targetBureau.boavistaFaturas || '0 (CENPROT)'}</strong></div>
+                          <div>Ações Cíveis / Protestos: <strong style={{ color: '#34D399' }}>{targetBureau.boavistaProtestos || '0 apontamentos'}</strong></div>
+                        </div>
+                      </div>
+
+                      {/* 3. QUOD */}
+                      <div className="print-card" style={{ background: '#070A10', border: '1px solid rgba(16,185,129,0.3)', borderRadius: 'var(--radius-sm)', padding: '1.15rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ color: '#34D399', fontWeight: 800 }}>QUOD CADASTRO POSITIVO</span>
+                          <span style={{ fontSize: '0.7rem', color: '#34D399', fontWeight: 700 }}>ATIVO</span>
+                        </div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FFFFFF', marginBottom: '0.5rem' }}>
+                          {targetBureau.quod} <span style={{ fontSize: '0.8rem', color: '#64748B' }}>/ 1000</span>
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: '#94A3B8', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div>Cadastro Positivo: <strong style={{ color: '#34D399' }}>{targetBureau.quodPositivo || 'Ativo e Regular'}</strong></div>
+                          <div>Histórico 36 meses: <strong style={{ color: '#34D399' }}>{targetBureau.quodHistorico || 'Zero Atrasos'}</strong></div>
+                          <div>Conformidade Bacen: <strong style={{ color: '#FFFFFF' }}>{targetBureau.quodConformidade || 'BOM – SEM APONTAMENTOS'}</strong></div>
+                        </div>
+                      </div>
+
+                      {/* 4. BACEN SCR */}
+                      <div className="print-card" style={{ background: '#070A10', border: '1px solid rgba(245,158,11,0.3)', borderRadius: 'var(--radius-sm)', padding: '1.15rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                          <span style={{ color: '#FBBF24', fontWeight: 800 }}>BANCO CENTRAL DO BRASIL (SCR)</span>
+                          <span style={{ fontSize: '0.7rem', color: '#FBBF24', fontWeight: 700 }}>REGISTRATO</span>
+                        </div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#FBBF24', marginBottom: '0.5rem' }}>
+                          {targetBureau.bacen || 'A1'} <span style={{ fontSize: '0.8rem', color: '#94A3B8' }}>Prime Rate</span>
+                        </div>
+                        <div style={{ fontSize: '0.76rem', color: '#94A3B8', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div>Operações Vencidas: <strong style={{ color: '#34D399' }}>{targetBureau.bacenVencidos || 'R$ 0,00'}</strong></div>
+                          <div>Prejuízos (3020/3030): <strong style={{ color: '#34D399' }}>{targetBureau.bacenPrejuizos || 'R$ 0,00 (Zero Prejuízo)'}</strong></div>
+                          <div>Comprometimento Total: <strong style={{ color: '#34D399' }}>{targetBureau.bacenComp || '(Excelente • 100% em dia)'}</strong></div>
+                        </div>
+                      </div>
+
+                    </div>
+
+                    {/* Certificação Pericial de Fechamento */}
+                    <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '2rem' }}>
+                      <div style={{ maxWidth: '480px', fontSize: '0.74rem', color: '#94A3B8', lineHeight: 1.5 }}>
+                        Certificamos que as consultas e notas acima refletem a real situação cadastral extraída dos sistemas centrais e são válidas para instrução probatória pericial e comprovação de idoneidade perante instituições financeiras.
+                      </div>
+                      <div style={{ textAlign: 'center', minWidth: '220px' }}>
+                        <div style={{ borderBottom: '1px solid #CBD5E1', marginBottom: '0.35rem', width: '220px' }} />
+                        <strong style={{ fontSize: '0.78rem', color: '#FFFFFF', display: 'block' }}>Mourato &amp; Associados Ltda</strong>
+                        <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>Departamento de Perícia Bancária</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
               </div>
             </div>
           </div>
