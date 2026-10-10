@@ -69,9 +69,21 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
 
   const [activeView, setActiveView] = useState(initialView || 'leads');
 
+  const handleCloseModal = () => {
+    setIsAuthenticated(false);
+    setAuthForm({ user: '', password: '' });
+    setAuthError('');
+    onClose();
+  };
+
   useEffect(() => {
-    if (isOpen && initialView) {
-      setActiveView(initialView);
+    if (isOpen) {
+      setIsAuthenticated(false);
+      setAuthForm({ user: '', password: '' });
+      setAuthError('');
+      if (initialView) {
+        setActiveView(initialView);
+      }
     }
   }, [isOpen, initialView]);
   const [leads, setLeads] = useState([]);
@@ -1110,7 +1122,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
         <div className="modal-dialog" style={{ maxWidth: '440px', padding: '2.5rem 2rem' }}>
           
           <button 
-            onClick={onClose} 
+            onClick={handleCloseModal} 
             style={{ 
               position: 'absolute', 
               top: '1.25rem', 
@@ -1617,7 +1629,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
           </div>
 
           <button
-            onClick={() => { setIsAuthenticated(false); onClose(); }}
+            onClick={handleCloseModal}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -1726,7 +1738,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
             </button>
 
             <button
-              onClick={onClose}
+              onClick={handleCloseModal}
               style={{
                 display: 'flex',
                 alignItems: 'center',
