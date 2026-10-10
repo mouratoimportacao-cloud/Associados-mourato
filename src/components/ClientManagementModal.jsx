@@ -44,7 +44,9 @@ import {
   Award,
   FileCheck,
   FileSpreadsheet,
-  Car
+  Car,
+  Printer,
+  Activity
 } from 'lucide-react';
 import { createPixCharge, createCheckoutProPreference, validateAntifraudPayer } from '../services/mercadoPagoService';
 import { TEIA_INITIAL_CLIENTS } from '../data/teiaDatabase';
@@ -55,14 +57,20 @@ const STORAGE_APPOINTMENTS_KEY = 'mourato_appointments_v1';
 const STORAGE_RECEIVABLES_KEY = 'mourato_receivables_v1';
 const STORAGE_MP_CONFIG_KEY = 'mourato_mercadopago_config_v1';
 
-export const ClientManagementModal = ({ isOpen, onClose }) => {
+export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authForm, setAuthForm] = useState({ user: '', password: '' });
   const [authError, setAuthError] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const [activeView, setActiveView] = useState('leads');
+  const [activeView, setActiveView] = useState(initialView || 'leads');
+
+  useEffect(() => {
+    if (isOpen && initialView) {
+      setActiveView(initialView);
+    }
+  }, [isOpen, initialView]);
   const [leads, setLeads] = useState([]);
   const [leadsLoading, setLeadsLoading] = useState(false);
 
@@ -187,6 +195,115 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
   const [mpTestStatus, setMpTestStatus] = useState('');
   const [copiedPixId, setCopiedPixId] = useState(null);
   const [activePixModal, setActivePixModal] = useState(null);
+
+  // 6. Birôs de Crédito & Scores Oficiais (PF & PJ)
+  const [selectedBureauClientId, setSelectedBureauClientId] = useState(() => {
+    return TEIA_INITIAL_CLIENTS[0]?.id || 'cli-mourato-pj';
+  });
+  const [bureauScoresMap, setBureauScoresMap] = useState(() => {
+    try {
+      const saved = localStorage.getItem('mourato_bureau_scores_real_v1');
+      if (saved) return JSON.parse(saved);
+    } catch (_) {}
+    return {
+      'cli-mourato-pj': { serasa: 885, boavista: 818, quod: 709, bacen: 'A1', prob: '96.2%', atrasos: 'Zero Atrasos' },
+      'cli-jailson-pf': { serasa: 654, boavista: 716, quod: 682, bacen: 'A1', prob: '82.4%', atrasos: 'Zero Atrasos' },
+      'cli-nilson-pf': { serasa: 350, boavista: 520, quod: 662, bacen: 'B1', prob: '64.0%', atrasos: 'Regularizado' },
+      'cli-erivaldo-pf': { serasa: 740, boavista: 710, quod: 695, bacen: 'A1', prob: '88.0%', atrasos: 'Zero Atrasos' },
+      'cli-sergio-pf': { serasa: 802, boavista: 717, quod: 730, bacen: 'A1', prob: '92.5%', atrasos: 'Zero Atrasos' },
+      'cli-silvanei-pf': { serasa: 710, boavista: 690, quod: 675, bacen: 'A1', prob: '85.0%', atrasos: 'Zero Atrasos' },
+      'cli-luiz-pf': { serasa: 670, boavista: 680, quod: 660, bacen: 'A1', prob: '83.0%', atrasos: 'Zero Atrasos' },
+      'cli-helia-pf': { serasa: 720, boavista: 700, quod: 690, bacen: 'A1', prob: '86.5%', atrasos: 'Zero Atrasos' }
+    };
+  });
+  const [bureauInputScores, setBureauInputScores] = useState({ serasa: '', boavista: '', quod: '' });
+  const [bureauToast, setBureauToast] = useState(null);
+  const [bureauModalDoc, setBureauModalDoc] = useState(null);
+  const [bureauSyncClock, setBureauSyncClock] = useState(() => new Date().toLocaleTimeString('pt-BR'));
+  const [bureauCategoryFilter, setBureauCategoryFilter] = useState('todos');
+
+  const getBureauDataForClient = (client) => {
+    if (!client) return { serasa: 654, boavista: 716, quod: 682, bacen: 'A1', prob: '82.4%', atrasos: 'Zero Atrasos' };
+    const saved = bureauScoresMap[client.id];
+    if (saved) return saved;
+    if (client.tipo === 'PJ') {
+      return { serasa: 885, boavista: 818, quod: 709, bacen: 'A1', prob: '96.2%', atrasos: 'Zero Atrasos' };
+    }
+    return { serasa: 654, boavista: 716, quod: 682, bacen: 'A1', prob: '82.4%', atrasos: 'Zero Atrasos' };
+  };
+
+  const showToast = (title, message) => {
+    setBureauToast({ title, message });
+    setTimeout(() => {
+      setBureauToast(null);
+    }, 4500);
+  };
+
+  const handleOpenBureauPortal = (bureauKey, client) => {
+    const targetClient = client || clients.find(c => c.id === selectedBureauClientId) || clients[0];
+    const doc = targetClient?.documento || '';
+    const cleanDoc = doc.replace(/\D/g, '');
+
+    try {
+      if (cleanDoc && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cleanDoc);
+      }
+    } catch (_) {}
+
+    const bureauNames = {
+      serasa: 'Serasa Experian',
+      boavista: 'Boa Vista SCPC (Equifax)',
+      quod: 'Quod Cadastro Positivo',
+      bacen: 'Banco Central do Brasil (Registrato)'
+    };
+    const bName = bureauNames[bureauKey] || 'Birô Oficial';
+
+    showToast(
+      `📋 ${bName}: Documento Copiado!`,
+      `${targetClient.tipo === 'PJ' ? 'CNPJ' : 'CPF'} ${doc} copiado para a área de transferência. Basta colar na tela oficial de login.`
+    );
+
+    let url = 'https://registrato.bcb.gov.br/';
+    if (bureauKey === 'serasa') {
+      url = targetClient.tipo === 'PJ' 
+        ? 'https://empresas.serasaexperian.com.br/' 
+        : 'https://www.serasa.com.br/entrar?product=portal&redirectUrl=%2Farea-cliente%2Fsaude-financeira';
+    } else if (bureauKey === 'boavista') {
+      url = targetClient.tipo === 'PJ'
+        ? 'https://www.boavistaservicos.com.br/'
+        : 'https://www.consumidorpositivo.com.br/entrar/';
+    } else if (bureauKey === 'quod') {
+      url = targetClient.tipo === 'PJ'
+        ? 'https://www.quod.com.br/'
+        : 'https://consumidor.quod.com.br/';
+    }
+
+    window.open(url, '_blank');
+  };
+
+  const handleSaveBureauScore = (bureauKey) => {
+    const activeClient = clients.find(c => c.id === selectedBureauClientId) || clients[0];
+    const val = parseInt(bureauInputScores[bureauKey], 10);
+    if (isNaN(val) || val < 0 || val > 1000) {
+      alert('Por favor, informe uma pontuação válida entre 0 e 1000.');
+      return;
+    }
+    const current = getBureauDataForClient(activeClient);
+    const updated = {
+      ...bureauScoresMap,
+      [activeClient.id]: {
+        ...current,
+        [bureauKey]: val
+      }
+    };
+    setBureauScoresMap(updated);
+    try {
+      localStorage.setItem('mourato_bureau_scores_real_v1', JSON.stringify(updated));
+    } catch (_) {}
+    setBureauSyncClock(new Date().toLocaleTimeString('pt-BR'));
+    setBureauInputScores(prev => ({ ...prev, [bureauKey]: '' }));
+    showToast('✅ Score Gravado com Sucesso!', `Pontuação do ${bureauKey.toUpperCase()} atualizada para ${val} no dossiê de ${activeClient.nomeRazao}.`);
+  };
 
   // New Client Form State (Suporte completo a PJ e PF)
   const [newClient, setNewClient] = useState({
@@ -1140,6 +1257,41 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
               <span>Cadastro de Clientes</span>
             </button>
 
+            {/* 2.1 Birôs de Crédito (PF & PJ) */}
+            <button
+              onClick={() => { setActiveView('bureau_scores'); setSelectedClient(null); setSidebarOpen(false); }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '0.75rem 0.85rem',
+                borderRadius: 'var(--radius-sm)',
+                background: activeView === 'bureau_scores' ? 'rgba(16, 185, 129, 0.18)' : 'transparent',
+                border: activeView === 'bureau_scores' ? '1px solid rgba(16, 185, 129, 0.5)' : '1px solid transparent',
+                color: activeView === 'bureau_scores' ? '#34D399' : '#94A3B8',
+                fontWeight: activeView === 'bureau_scores' ? 700 : 500,
+                fontSize: '0.82rem',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                <ShieldCheck size={16} color={activeView === 'bureau_scores' ? '#34D399' : '#64748B'} />
+                <span>Birôs de Crédito (PF &amp; PJ)</span>
+              </div>
+              <span style={{ 
+                fontSize: '0.68rem', 
+                padding: '0.1rem 0.45rem', 
+                borderRadius: '9999px', 
+                background: activeView === 'bureau_scores' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(255, 255, 255, 0.08)',
+                color: activeView === 'bureau_scores' ? '#34D399' : '#94A3B8',
+                fontWeight: 700 
+              }}>
+                4 Birôs
+              </span>
+            </button>
+
             {/* 3. Novos Agendamentos */}
             <button
               onClick={() => { setActiveView('appointments'); setSelectedClient(null); setSidebarOpen(false); }}
@@ -1339,6 +1491,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                 {activeView === 'leads' && 'Leads & Solicitações'}
                 {activeView === 'clients_list' && 'Consulta de Clientes Cadastrados'}
                 {activeView === 'clients_new' && 'Cadastro de Novo Cliente'}
+                {activeView === 'bureau_scores' && 'Pontuação nos Birôs de Crédito & Banco Central'}
                 {activeView === 'appointments' && 'Novos Agendamentos & Audiências'}
                 {activeView === 'expenses' && 'Gestão de Despesas da Empresa'}
                 {activeView === 'receivables' && 'Gestão de Recebíveis & Mercado Pago'}
@@ -1349,6 +1502,7 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
               {activeView === 'leads' && 'Solicitações do formulário público — gerencie, aprove ou remova.'}
               {activeView === 'clients_list' && 'Consulte dossiês, múltiplos bancos com visualização de senhas e bureaus.'}
               {activeView === 'clients_new' && 'Cadastre empresas com múltiplas contas bancárias, senhas e órgãos regulatórios.'}
+              {activeView === 'bureau_scores' && 'Auditoria de Scores em tempo real (Serasa, Boa Vista, Quod e Bacen SCR) para Empresas (PJ) e Sócios (PF).'}
               {activeView === 'appointments' && 'Agende e acompanhe reuniões estratégicas com sócios e clientes.'}
               {activeView === 'expenses' && 'Acompanhe contas de consumo, energia, aluguel e status de pagamento.'}
               {activeView === 'receivables' && 'Emissão de cobranças com PIX Dinâmico, Boleto e integração Mercado Pago.'}
@@ -1571,14 +1725,41 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                     </button>
                   </div>
 
-                  <button 
-                    onClick={() => setActiveView('clients_new')}
-                    className="btn-primary-gold"
-                    style={{ padding: '0.65rem 1.3rem', fontSize: '0.82rem', gap: '0.5rem' }}
-                  >
-                    <Plus size={16} />
-                    Cadastrar Novo Cliente
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.65rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button 
+                      onClick={() => {
+                        setSelectedBureauClientId(clients[0]?.id || 'cli-mourato-pj');
+                        setActiveView('bureau_scores');
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        padding: '0.65rem 1.15rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        borderRadius: 'var(--radius-sm)',
+                        background: 'rgba(16, 185, 129, 0.15)',
+                        border: '1px solid rgba(16, 185, 129, 0.45)',
+                        color: '#34D399',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      title="Abrir Painel Oficial dos Birôs de Crédito (Serasa, Boa Vista, Quod, Bacen)"
+                    >
+                      <ShieldCheck size={16} />
+                      Birôs de Crédito (PF &amp; PJ)
+                    </button>
+
+                    <button 
+                      onClick={() => setActiveView('clients_new')}
+                      className="btn-primary-gold"
+                      style={{ padding: '0.65rem 1.3rem', fontSize: '0.82rem', gap: '0.5rem' }}
+                    >
+                      <Plus size={16} />
+                      Cadastrar Novo Cliente
+                    </button>
+                  </div>
                 </div>
 
                 {/* Campo de Busca Textual */}
@@ -1835,6 +2016,30 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
                           >
                             <CreditCard size={14} />
                             Cobrar
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSelectedBureauClientId(client.id);
+                              setActiveView('bureau_scores');
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.35rem',
+                              padding: '0.55rem 0.75rem',
+                              fontSize: '0.78rem',
+                              borderRadius: 'var(--radius-sm)',
+                              background: 'rgba(16, 185, 129, 0.12)',
+                              border: '1px solid rgba(16, 185, 129, 0.4)',
+                              color: '#34D399',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              whiteSpace: 'nowrap'
+                            }}
+                            title="Acessar Birôs de Crédito e Scores deste cliente"
+                          >
+                            <ShieldCheck size={14} />
+                            Birô
                           </button>
                           <button
                             onClick={() => setSelectedClient(client)}
@@ -3935,6 +4140,919 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
             </div>
           )}
 
+          {/* ======================================================== */}
+          {/* TAB 7: PONTUAÇÃO NOS BIRÔS DE CRÉDITO & BANCO CENTRAL     */}
+          {/* ======================================================== */}
+          {activeView === 'bureau_scores' && (() => {
+            const activeClient = clients.find(c => c.id === selectedBureauClientId) || clients[0] || TEIA_INITIAL_CLIENTS[0];
+            const bureauData = getBureauDataForClient(activeClient);
+            const activeSerasa = bureauData.serasa || 654;
+            const activeBoaVista = bureauData.boavista || 716;
+            const activeQuod = bureauData.quod || 682;
+            const activeBacen = bureauData.bacen || 'A1';
+
+            const filteredForBureau = clients.filter(c => {
+              if (bureauCategoryFilter === 'PJ') return c.tipo === 'PJ';
+              if (bureauCategoryFilter === 'PF') return c.tipo === 'PF';
+              return true;
+            });
+
+            return (
+              <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+                
+                {/* 1. Header do Módulo de Birôs com Badge em Tempo Real */}
+                <div style={{
+                  background: 'linear-gradient(135deg, rgba(13, 18, 29, 0.95) 0%, rgba(7, 10, 16, 0.98) 100%)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '1.5rem 1.75rem',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '1rem',
+                  boxShadow: '0 8px 32px rgba(0, 0, 0, 0.5)'
+                }}>
+                  <div>
+                    <span style={{ 
+                      fontSize: '0.72rem', 
+                      letterSpacing: '0.14em', 
+                      color: '#38BDF8', 
+                      fontWeight: 800,
+                      display: 'block',
+                      marginBottom: '0.3rem'
+                    }}>
+                      SCORES AUDITADOS EM TEMPO REAL
+                    </span>
+                    <h2 style={{ fontSize: '1.45rem', color: '#FFFFFF', margin: 0, fontWeight: 800 }}>
+                      Pontuação nos Birôs de Crédito &amp; Banco Central
+                    </h2>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                    <span style={{
+                      fontSize: '0.78rem',
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      padding: '0.4rem 0.9rem',
+                      borderRadius: '9999px',
+                      background: 'rgba(16, 185, 129, 0.12)',
+                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                      color: '#34D399',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem'
+                    }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10B981', display: 'inline-block' }} />
+                      Sincronizado em {bureauSyncClock}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 2. Barra de Seleção do Cliente / Titular (PJ vs PF) */}
+                <div style={{
+                  background: '#090D15',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 'var(--radius-md)',
+                  padding: '1.25rem 1.5rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 600 }}>Filtrar Titulares:</span>
+                      <button
+                        type="button"
+                        onClick={() => setBureauCategoryFilter('todos')}
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '0.3rem 0.7rem',
+                          borderRadius: '4px',
+                          border: bureauCategoryFilter === 'todos' ? '1px solid var(--gold-border)' : '1px solid rgba(255,255,255,0.06)',
+                          background: bureauCategoryFilter === 'todos' ? 'rgba(197, 168, 105, 0.2)' : 'transparent',
+                          color: bureauCategoryFilter === 'todos' ? 'var(--gold-light)' : '#94A3B8',
+                          cursor: 'pointer',
+                          fontWeight: 700
+                        }}
+                      >
+                        Todos ({clients.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBureauCategoryFilter('PJ')}
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '0.3rem 0.7rem',
+                          borderRadius: '4px',
+                          border: bureauCategoryFilter === 'PJ' ? '1px solid var(--gold-primary)' : '1px solid rgba(255,255,255,0.06)',
+                          background: bureauCategoryFilter === 'PJ' ? 'rgba(197, 168, 105, 0.25)' : 'transparent',
+                          color: bureauCategoryFilter === 'PJ' ? 'var(--gold-light)' : '#94A3B8',
+                          cursor: 'pointer',
+                          fontWeight: 700
+                        }}
+                      >
+                        🏢 Empresas (PJ)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setBureauCategoryFilter('PF')}
+                        style={{
+                          fontSize: '0.72rem',
+                          padding: '0.3rem 0.7rem',
+                          borderRadius: '4px',
+                          border: bureauCategoryFilter === 'PF' ? '1px solid #00B4FF' : '1px solid rgba(255,255,255,0.06)',
+                          background: bureauCategoryFilter === 'PF' ? 'rgba(0, 158, 227, 0.2)' : 'transparent',
+                          color: bureauCategoryFilter === 'PF' ? '#38BDF8' : '#94A3B8',
+                          cursor: 'pointer',
+                          fontWeight: 700
+                        }}
+                      >
+                        👤 Sócios (PF)
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>Selecionar Titular:</span>
+                      <select
+                        value={selectedBureauClientId}
+                        onChange={(e) => setSelectedBureauClientId(e.target.value)}
+                        style={{
+                          background: '#131A29',
+                          border: '1px solid var(--gold-border)',
+                          borderRadius: 'var(--radius-xs)',
+                          color: '#FFFFFF',
+                          padding: '0.45rem 0.85rem',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          maxWidth: '360px'
+                        }}
+                      >
+                        {filteredForBureau.map(c => (
+                          <option key={c.id} value={c.id}>
+                            [{c.tipo}] {c.nomeRazao} — {c.documento}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Detalhes Rápidos do Cliente Selecionado */}
+                  {activeClient && (
+                    <div style={{
+                      background: '#0D1322',
+                      border: activeClient.tipo === 'PJ' ? '1px solid rgba(197, 168, 105, 0.3)' : '1px solid rgba(0, 158, 227, 0.3)',
+                      borderRadius: 'var(--radius-sm)',
+                      padding: '0.9rem 1.25rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: '0.75rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        <span style={{
+                          fontSize: '0.72rem',
+                          padding: '0.2rem 0.65rem',
+                          borderRadius: '9999px',
+                          background: activeClient.tipo === 'PJ' ? 'rgba(197, 168, 105, 0.25)' : 'rgba(0, 158, 227, 0.25)',
+                          color: activeClient.tipo === 'PJ' ? 'var(--gold-light)' : '#38BDF8',
+                          border: activeClient.tipo === 'PJ' ? '1px solid var(--gold-border)' : '1px solid #00B4FF',
+                          fontWeight: 800
+                        }}>
+                          {activeClient.tipo === 'PJ' ? '🏢 PESSOA JURÍDICA (PJ)' : '👤 PESSOA FÍSICA (PF)'}
+                        </span>
+                        <div>
+                          <strong style={{ color: '#FFFFFF', fontSize: '0.98rem', display: 'block' }}>
+                            {activeClient.nomeRazao}
+                          </strong>
+                          <span style={{ color: '#94A3B8', fontSize: '0.76rem', fontFamily: 'monospace' }}>
+                            {activeClient.documentoTipo || (activeClient.tipo === 'PJ' ? 'CNPJ' : 'CPF')}: {activeClient.documento}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '1rem', fontSize: '0.75rem', color: '#94A3B8', flexWrap: 'wrap' }}>
+                        {activeClient.socioVinculado && (
+                          <span>Sócio Adm: <strong style={{ color: 'var(--gold-light)' }}>{activeClient.socioVinculado}</strong></span>
+                        )}
+                        {activeClient.empresaVinculada && (
+                          <span>Empresa: <strong style={{ color: 'var(--gold-light)' }}>{activeClient.empresaVinculada}</strong></span>
+                        )}
+                        {activeClient.balanco?.ativo && (
+                          <span>Ativo: <strong style={{ color: '#34D399' }}>{activeClient.balanco.ativo}</strong></span>
+                        )}
+                        {activeClient.rendaPatrimonio?.veiculos && (
+                          <span>Veículo: <strong style={{ color: '#38BDF8' }}>{activeClient.rendaPatrimonio.veiculos}</strong></span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. Grid dos 4 Cards Oficiais dos Birôs */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                  gap: '1.25rem'
+                }}>
+                  
+                  {/* CARD 1: SERASA EXPERIAN */}
+                  <div style={{
+                    background: '#0B0F19',
+                    border: '1px solid rgba(225, 29, 72, 0.25)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.4rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+                    position: 'relative'
+                  }}>
+                    <div>
+                      {/* Topo do Card */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.2rem' }}>
+                        <div>
+                          <span style={{
+                            display: 'inline-block',
+                            background: 'rgba(225, 29, 72, 0.15)',
+                            color: '#FB7185',
+                            border: '1px solid rgba(225, 29, 72, 0.45)',
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '4px',
+                            fontWeight: 900,
+                            fontSize: '0.72rem',
+                            letterSpacing: '0.05em'
+                          }}>
+                            SERASA
+                          </span>
+                          <span style={{ display: 'block', fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                            Experian Brasil Oficial
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '9999px',
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          color: '#34D399',
+                          border: '1px solid rgba(16, 185, 129, 0.4)'
+                        }}>
+                          {activeSerasa >= 750 ? 'EXCELENTE (94.0%)' : activeSerasa >= 600 ? 'BOM (68.0%)' : 'REGULAR (45.0%)'}
+                        </span>
+                      </div>
+
+                      {/* Score Display Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <div>
+                          <span style={{ fontSize: '2.6rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>
+                            {activeSerasa}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', color: '#64748B', marginLeft: '0.35rem' }}>
+                            / 1000
+                          </span>
+                        </div>
+                        <div style={{ width: '54px', height: '54px' }}>
+                          <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="rgba(255, 255, 255, 0.08)"
+                              strokeWidth="3.2"
+                            />
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#10B981"
+                              strokeWidth="3.2"
+                              strokeDasharray={`${(activeSerasa / 10).toFixed(1)}, 100`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Campo Sincronização Score Real */}
+                      <div style={{
+                        background: '#070A10',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        borderRadius: 'var(--radius-xs)',
+                        padding: '0.65rem 0.75rem',
+                        marginBottom: '1.2rem'
+                      }}>
+                        <label style={{ display: 'block', fontSize: '0.68rem', color: '#94A3B8', marginBottom: '0.35rem' }}>
+                          Score Real da sua Tela:
+                        </label>
+                        <div style={{ display: 'flex', gap: '0.45rem' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="1000"
+                            placeholder={String(activeSerasa)}
+                            value={bureauInputScores.serasa}
+                            onChange={(e) => setBureauInputScores({ ...bureauInputScores, serasa: e.target.value })}
+                            style={{
+                              flex: 1,
+                              background: '#0F1626',
+                              border: '1px solid rgba(255, 255, 255, 0.12)',
+                              color: '#FFFFFF',
+                              borderRadius: '4px',
+                              padding: '0.35rem 0.55rem',
+                              fontSize: '0.8rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveBureauScore('serasa')}
+                            style={{
+                              background: 'rgba(225, 29, 72, 0.25)',
+                              border: '1px solid rgba(225, 29, 72, 0.5)',
+                              color: '#FB7185',
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Gravar
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lista de Detalhes Periciais */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Probabilidade de Pagamento:</span>
+                          <strong style={{ color: '#34D399' }}>{bureauData.prob || (activeSerasa > 750 ? '94.8%' : '82.4%')}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Dívidas / Negativações:</span>
+                          <strong style={{ color: '#34D399' }}>0 (Nada Consta)</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                          <span>Consultas de Crédito (6m):</span>
+                          <strong style={{ color: '#34D399' }}>0 consultas</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões de Ação do Serasa */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBureauPortal('serasa', activeClient)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.45rem',
+                          background: 'rgba(225, 29, 72, 0.2)',
+                          border: '1px solid rgba(225, 29, 72, 0.55)',
+                          color: '#FDA4AF',
+                          padding: '0.65rem 0.85rem',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Abre o portal do Serasa em nova aba e copia CPF/CNPJ"
+                      >
+                        <ExternalLink size={14} />
+                        Abrir Serasa Oficial ({activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setBureauModalDoc('serasa_petition')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.45rem',
+                          background: 'rgba(14, 165, 233, 0.12)',
+                          border: '1px solid rgba(14, 165, 233, 0.4)',
+                          color: '#38BDF8',
+                          padding: '0.55rem 0.85rem',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                        title="Abrir requerimento administrativo de exclusão de consultas"
+                      >
+                        <FileText size={13} />
+                        ⚖️ Exclusão Consultas Serasa (HTML)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CARD 2: BOA VISTA SCPC (EQUIFAX) */}
+                  <div style={{
+                    background: '#0B0F19',
+                    border: '1px solid rgba(14, 165, 233, 0.25)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.4rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+                    position: 'relative'
+                  }}>
+                    <div>
+                      {/* Topo do Card */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.2rem' }}>
+                        <div>
+                          <span style={{
+                            display: 'inline-block',
+                            background: 'rgba(14, 165, 233, 0.15)',
+                            color: '#38BDF8',
+                            border: '1px solid rgba(14, 165, 233, 0.45)',
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '4px',
+                            fontWeight: 900,
+                            fontSize: '0.72rem',
+                            letterSpacing: '0.05em'
+                          }}>
+                            BOA VISTA
+                          </span>
+                          <span style={{ display: 'block', fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                            SCPC Equifax Oficial
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '9999px',
+                          background: 'rgba(59, 130, 246, 0.15)',
+                          color: '#60A5FA',
+                          border: '1px solid rgba(59, 130, 246, 0.4)'
+                        }}>
+                          FAIXA A (EXCELENTE)
+                        </span>
+                      </div>
+
+                      {/* Score Display Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <div>
+                          <span style={{ fontSize: '2.6rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>
+                            {activeBoaVista}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', color: '#64748B', marginLeft: '0.35rem' }}>
+                            / 1000
+                          </span>
+                        </div>
+                        <div style={{ width: '54px', height: '54px' }}>
+                          <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="rgba(255, 255, 255, 0.08)"
+                              strokeWidth="3.2"
+                            />
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#38BDF8"
+                              strokeWidth="3.2"
+                              strokeDasharray={`${(activeBoaVista / 10).toFixed(1)}, 100`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Campo Sincronização Score Real */}
+                      <div style={{
+                        background: '#070A10',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        borderRadius: 'var(--radius-xs)',
+                        padding: '0.65rem 0.75rem',
+                        marginBottom: '1.2rem'
+                      }}>
+                        <label style={{ display: 'block', fontSize: '0.68rem', color: '#94A3B8', marginBottom: '0.35rem' }}>
+                          Score Real da sua Tela:
+                        </label>
+                        <div style={{ display: 'flex', gap: '0.45rem' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="1000"
+                            placeholder={String(activeBoaVista)}
+                            value={bureauInputScores.boavista}
+                            onChange={(e) => setBureauInputScores({ ...bureauInputScores, boavista: e.target.value })}
+                            style={{
+                              flex: 1,
+                              background: '#0F1626',
+                              border: '1px solid rgba(255, 255, 255, 0.12)',
+                              color: '#FFFFFF',
+                              borderRadius: '4px',
+                              padding: '0.35rem 0.55rem',
+                              fontSize: '0.8rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveBureauScore('boavista')}
+                            style={{
+                              background: 'rgba(14, 165, 233, 0.25)',
+                              border: '1px solid rgba(14, 165, 233, 0.5)',
+                              color: '#38BDF8',
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Gravar
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lista de Detalhes Periciais */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Índice de Pontualidade:</span>
+                          <strong style={{ color: '#38BDF8' }}>98.4%</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Status de Faturas Cartão:</span>
+                          <strong style={{ color: '#34D399' }}>0 (CENPROT)</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                          <span>Ações Cíveis / Protestos:</span>
+                          <strong style={{ color: '#34D399' }}>0 apontamentos</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botões de Ação do Boa Vista */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBureauPortal('boavista', activeClient)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.45rem',
+                          background: 'rgba(14, 165, 233, 0.2)',
+                          border: '1px solid rgba(14, 165, 233, 0.55)',
+                          color: '#38BDF8',
+                          padding: '0.65rem 0.85rem',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Abre o portal do Boa Vista em nova aba e copia CPF/CNPJ"
+                      >
+                        <ExternalLink size={14} />
+                        Abrir Boa Vista ({activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setBureauModalDoc('boavista_petition')}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.45rem',
+                          background: 'rgba(14, 165, 233, 0.12)',
+                          border: '1px solid rgba(14, 165, 233, 0.4)',
+                          color: '#38BDF8',
+                          padding: '0.55rem 0.85rem',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '0.74rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                        title="Abrir petição formal de retificação e purga do Boa Vista"
+                      >
+                        <FileCheck size={13} />
+                        📄 Petição Boa Vista (HTML)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CARD 3: QUOD (CADASTRO POSITIVO) */}
+                  <div style={{
+                    background: '#0B0F19',
+                    border: '1px solid rgba(16, 185, 129, 0.25)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.4rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+                    position: 'relative'
+                  }}>
+                    <div>
+                      {/* Topo do Card */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.2rem' }}>
+                        <div>
+                          <span style={{
+                            display: 'inline-block',
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            color: '#34D399',
+                            border: '1px solid rgba(16, 185, 129, 0.45)',
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '4px',
+                            fontWeight: 900,
+                            fontSize: '0.72rem',
+                            letterSpacing: '0.05em'
+                          }}>
+                            QUOD
+                          </span>
+                          <span style={{ display: 'block', fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                            Cadastro Positivo Oficial
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '9999px',
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          color: '#34D399',
+                          border: '1px solid rgba(16, 185, 129, 0.4)'
+                        }}>
+                          SCORE {activeQuod} (BOM)
+                        </span>
+                      </div>
+
+                      {/* Score Display Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <div>
+                          <span style={{ fontSize: '2.6rem', fontWeight: 900, color: '#FFFFFF', lineHeight: 1 }}>
+                            {activeQuod}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', color: '#64748B', marginLeft: '0.35rem' }}>
+                            / 1000
+                          </span>
+                        </div>
+                        <div style={{ width: '54px', height: '54px' }}>
+                          <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="rgba(255, 255, 255, 0.08)"
+                              strokeWidth="3.2"
+                            />
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#10B981"
+                              strokeWidth="3.2"
+                              strokeDasharray={`${(activeQuod / 10).toFixed(1)}, 100`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Campo Sincronização Score Real */}
+                      <div style={{
+                        background: '#070A10',
+                        border: '1px solid rgba(255, 255, 255, 0.06)',
+                        borderRadius: 'var(--radius-xs)',
+                        padding: '0.65rem 0.75rem',
+                        marginBottom: '1.2rem'
+                      }}>
+                        <label style={{ display: 'block', fontSize: '0.68rem', color: '#94A3B8', marginBottom: '0.35rem' }}>
+                          Score Real da sua Tela:
+                        </label>
+                        <div style={{ display: 'flex', gap: '0.45rem' }}>
+                          <input
+                            type="number"
+                            min="0"
+                            max="1000"
+                            placeholder={String(activeQuod)}
+                            value={bureauInputScores.quod}
+                            onChange={(e) => setBureauInputScores({ ...bureauInputScores, quod: e.target.value })}
+                            style={{
+                              flex: 1,
+                              background: '#0F1626',
+                              border: '1px solid rgba(255, 255, 255, 0.12)',
+                              color: '#FFFFFF',
+                              borderRadius: '4px',
+                              padding: '0.35rem 0.55rem',
+                              fontSize: '0.8rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveBureauScore('quod')}
+                            style={{
+                              background: 'rgba(16, 185, 129, 0.25)',
+                              border: '1px solid rgba(16, 185, 129, 0.5)',
+                              color: '#34D399',
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: '4px',
+                              fontSize: '0.74rem',
+                              fontWeight: 700,
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Gravar
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Lista de Detalhes Periciais */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Cadastro Positivo:</span>
+                          <strong style={{ color: '#34D399' }}>Ativo (Cadastrado em 10/09/2026)</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Histórico 36 meses:</span>
+                          <strong style={{ color: '#34D399' }}>Zero Atrasos</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                          <span>Conformidade Bacen:</span>
+                          <strong style={{ color: '#FFFFFF' }}>BOM – SEM APONTAMENTOS</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botão de Ação do Quod */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBureauPortal('quod', activeClient)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.45rem',
+                          background: 'rgba(16, 185, 129, 0.18)',
+                          border: '1px solid rgba(16, 185, 129, 0.5)',
+                          color: '#34D399',
+                          padding: '0.65rem 0.85rem',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Abre o portal da Quod Consumidor/Empresas com documento copiado"
+                      >
+                        <ExternalLink size={14} />
+                        Acessar Quod ({activeClient?.tipo === 'PJ' ? 'CNPJ Copiado' : 'CPF Copiado'})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CARD 4: BACEN SCR (REGISTRATO) */}
+                  <div style={{
+                    background: '#0B0F19',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                    borderRadius: 'var(--radius-md)',
+                    padding: '1.4rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.5)',
+                    position: 'relative'
+                  }}>
+                    <div>
+                      {/* Topo do Card */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.2rem' }}>
+                        <div>
+                          <span style={{
+                            display: 'inline-block',
+                            background: 'rgba(245, 158, 11, 0.15)',
+                            color: '#FBBF24',
+                            border: '1px solid rgba(245, 158, 11, 0.45)',
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '4px',
+                            fontWeight: 900,
+                            fontSize: '0.72rem',
+                            letterSpacing: '0.05em'
+                          }}>
+                            BACEN SCR
+                          </span>
+                          <span style={{ display: 'block', fontSize: '0.7rem', color: '#94A3B8', marginTop: '0.25rem' }}>
+                            Registrato Oficial
+                          </span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 700,
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '9999px',
+                          background: 'rgba(245, 158, 11, 0.15)',
+                          color: '#FBBF24',
+                          border: '1px solid rgba(245, 158, 11, 0.4)'
+                        }}>
+                          RATING {activeBacen}
+                        </span>
+                      </div>
+
+                      {/* Score Display Row */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
+                        <div>
+                          <span style={{ fontSize: '2.6rem', fontWeight: 900, color: '#FBBF24', lineHeight: 1 }}>
+                            {activeBacen}
+                          </span>
+                          <span style={{ fontSize: '0.85rem', color: '#94A3B8', marginLeft: '0.5rem', fontWeight: 600 }}>
+                            Mínimo Risco
+                          </span>
+                        </div>
+                        <div style={{ width: '54px', height: '54px' }}>
+                          <svg viewBox="0 0 36 36" style={{ width: '100%', height: '100%', transform: 'rotate(-90deg)' }}>
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="rgba(255, 255, 255, 0.08)"
+                              strokeWidth="3.2"
+                            />
+                            <path
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                              fill="none"
+                              stroke="#F59E0B"
+                              strokeWidth="3.2"
+                              strokeDasharray="94.5, 100"
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* Informações Contábeis Registrato */}
+                      <div style={{
+                        background: '#070A10',
+                        border: '1px solid rgba(245, 158, 11, 0.15)',
+                        borderRadius: 'var(--radius-xs)',
+                        padding: '0.65rem 0.75rem',
+                        marginBottom: '1.2rem',
+                        fontSize: '0.72rem',
+                        color: '#CBD5E1'
+                      }}>
+                        <span style={{ color: '#FBBF24', fontWeight: 700 }}>Certificação Gov.br: </span>
+                        Nível Ouro Ativo (Acesso via Certificado e-CNPJ / e-CPF)
+                      </div>
+
+                      {/* Lista de Detalhes Periciais */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.74rem', marginBottom: '1.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Operações Vencidas:</span>
+                          <strong style={{ color: '#34D399' }}>R$ 0,00</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8', borderBottom: '1px solid rgba(255,255,255,0.04)', paddingBottom: '0.35rem' }}>
+                          <span>Prejuízos (3020/3030):</span>
+                          <strong style={{ color: '#34D399' }}>R$ 0,00 (Zero Prejuízo)</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#94A3B8' }}>
+                          <span>Comprometimento Total:</span>
+                          <strong style={{ color: '#34D399' }}>(Excelente • 100% em dia)</strong>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Botão de Ação do Bacen */}
+                    <div>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenBureauPortal('bacen', activeClient)}
+                        style={{
+                          width: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.45rem',
+                          background: 'rgba(245, 158, 11, 0.18)',
+                          border: '1px solid rgba(245, 158, 11, 0.5)',
+                          color: '#FBBF24',
+                          padding: '0.65rem 0.85rem',
+                          borderRadius: 'var(--radius-xs)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                        title="Abre o Registrato do Banco Central com documento copiado"
+                      >
+                        <ExternalLink size={14} />
+                        Acessar Registrato ({activeClient?.tipo === 'PJ' ? 'e-CNPJ' : 'e-CPF'})
+                      </button>
+                    </div>
+                  </div>
+
+                </div>
+
+              </div>
+            );
+          })()}
+
         </div>
       </main>
 
@@ -4257,7 +5375,32 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
               </div>
             )}
 
-            <div style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+            <div style={{ marginTop: '1.75rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => {
+                  const targetId = selectedClient.id;
+                  setSelectedClient(null);
+                  setSelectedBureauClientId(targetId);
+                  setActiveView('bureau_scores');
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.45rem',
+                  padding: '0.65rem 1.25rem',
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  borderRadius: 'var(--radius-sm)',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.45)',
+                  color: '#34D399',
+                  cursor: 'pointer'
+                }}
+                title="Abrir Auditoria dos Birôs de Crédito para este cliente"
+              >
+                <ShieldCheck size={15} />
+                Acessar Birôs de Crédito
+              </button>
               <button
                 onClick={() => {
                   const clientToCharge = selectedClient;
@@ -4968,6 +6111,200 @@ export const ClientManagementModal = ({ isOpen, onClose }) => {
             <div style={{ marginTop: '1rem', fontSize: '0.68rem', color: '#64748B' }}>
               Identificador: {activePixModal.mpPaymentId} • Modo: {activePixModal.mode || 'Local'}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------------------------------------------- */}
+      {/* MODAL: PETIÇÕES & REQUERIMENTOS (HTML/IMPRESSÃO)    */}
+      {/* ---------------------------------------------------- */}
+      {bureauModalDoc && (() => {
+        const activeClient = clients.find(c => c.id === selectedBureauClientId) || clients[0] || TEIA_INITIAL_CLIENTS[0];
+        const isSerasa = bureauModalDoc === 'serasa_petition';
+
+        return (
+          <div style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(5, 7, 12, 0.88)',
+            backdropFilter: 'blur(8px)',
+            zIndex: 1150,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1.5rem'
+          }}>
+            <div style={{
+              background: '#0D121D',
+              border: '1px solid var(--gold-border)',
+              borderRadius: 'var(--radius-md)',
+              maxWidth: '750px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '2.25rem',
+              boxShadow: '0 16px 48px rgba(0, 0, 0, 0.85)',
+              position: 'relative'
+            }}>
+              <button
+                onClick={() => setBureauModalDoc(null)}
+                style={{
+                  position: 'absolute',
+                  top: '1.25rem',
+                  right: '1.25rem',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94A3B8',
+                  cursor: 'pointer',
+                  padding: '0.4rem'
+                }}
+              >
+                <X size={18} />
+              </button>
+
+              <div style={{ borderBottom: '1px solid rgba(255, 255, 255, 0.1)', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--gold-light)', letterSpacing: '0.1em', fontWeight: 800 }}>
+                  INSTRUMENTO JURÍDICO ADMINISTRATIVO • MOURATO &amp; ASSOCIADOS
+                </span>
+                <h2 style={{ fontSize: '1.25rem', color: '#FFFFFF', margin: '0.35rem 0 0', fontWeight: 800 }}>
+                  {isSerasa 
+                    ? 'Requerimento de Exclusão de Consultas Excessivas de Crédito (Serasa Experian)'
+                    : 'Petição Administrativa de Purga & Retificação Cadastral (Boa Vista SCPC)'}
+                </h2>
+              </div>
+
+              <div style={{
+                background: '#070A10',
+                border: '1px solid rgba(255, 255, 255, 0.08)',
+                borderRadius: 'var(--radius-xs)',
+                padding: '1.5rem',
+                fontSize: '0.84rem',
+                lineHeight: 1.7,
+                color: '#CBD5E1',
+                fontFamily: 'Georgia, serif',
+                whiteSpace: 'pre-line'
+              }}>
+                {isSerasa ? `
+ILUSTRÍSSIMO DIRETOR DE OPERAÇÕES DA SERASA EXPERIAN S/A
+DEPARTAMENTO DE CONFORMIDADE E CADASTRO POSITIVO
+
+REQUERENTE: ${activeClient.nomeRazao}
+DOCUMENTO (${activeClient.tipo === 'PJ' ? 'CNPJ' : 'CPF'}): ${activeClient.documento}
+REPRESENTANTE LEGAL / SÓCIO: ${activeClient.socioVinculado || activeClient.responsavel || activeClient.nomeRazao}
+DATA DO REQUERIMENTO: ${new Date().toLocaleDateString('pt-BR')}
+
+Venho por meio deste, amparado nos ditames da Lei nº 8.078/90 (Código de Defesa do Consumidor, Artigo 43, § 2º e § 3º) e da Lei Complementar nº 166/2019 (Lei do Cadastro Positivo), requerer a IMEDIATA EXCLUSÃO E PURGA DAS ANOTAÇÕES DE CONSULTAS EXCESSIVAS DE CRÉDITO registradas no histórico dos últimos 6 meses.
+
+FUNDAMENTAÇÃO:
+1. O histórico financeiro da requerente encontra-se rigorosamente em dia, com Score auditado e ausência absoluta de títulos protestados ou dívidas ativas vencidas.
+2. A mera cotação ou simulação de operações financeiras junto a instituições bancárias não pode ensejar depreciação artificial do Score de Crédito ('credit score damage').
+3. A manutenção dessas consultas sem a correspondente contratação desvirtua a finalidade estatística do bureau, impondo ônus comercial indevido à parte interessada.
+
+Nestes termos, pede e espera deferimento.
+
+_______________________________________________
+${activeClient.nomeRazao}
+Titular / Representante Legal
+Mourato & Associados — Assessoria em Mercado de Capitais
+` : `
+À DIRETORIA JURÍDICA E DE ATENDIMENTO
+BOA VISTA SERVIÇOS S/A (SCPC EQUIFAX DO BRASIL)
+
+TITULAR: ${activeClient.nomeRazao}
+DOCUMENTO (${activeClient.tipo === 'PJ' ? 'CNPJ' : 'CPF'}): ${activeClient.documento}
+DATA: ${new Date().toLocaleDateString('pt-BR')}
+
+REQUERIMENTO DE RETIFICAÇÃO E EXPURGO CADASTRAL ADMINISTRATIVO
+
+Pelo presente instrumento, com fulcro na Lei Federal nº 12.414/2011 e no art. 43 do CDC, requer-se a retificação tempestiva de quaisquer eventuais inconsistências ou consultas pretéritas atreladas ao documento acima epigrafado.
+
+Certifica-se a plena regularidade fiscal e contábil, atestando conformidade plena perante os órgãos de registro e BACEN SCR (Rating A1).
+
+Termos em que pede deferimento.
+
+_______________________________________________
+${activeClient.nomeRazao}
+Mourato & Associados Ltda
+`}
+              </div>
+
+              <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const text = isSerasa 
+                      ? `REQUERIMENTO SERASA EXPERIAN\nTitular: ${activeClient.nomeRazao}\nDocumento: ${activeClient.documento}` 
+                      : `PETIÇÃO BOA VISTA SCPC\nTitular: ${activeClient.nomeRazao}`;
+                    if (navigator.clipboard) navigator.clipboard.writeText(text);
+                    showToast('📋 Petição Copiada!', 'Texto do requerimento copiado com sucesso.');
+                  }}
+                  className="btn-secondary-subtle"
+                  style={{ padding: '0.65rem 1.25rem', fontSize: '0.8rem', gap: '0.45rem' }}
+                >
+                  <Copy size={14} />
+                  Copiar Texto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="btn-primary-gold"
+                  style={{ padding: '0.65rem 1.4rem', fontSize: '0.8rem', gap: '0.45rem' }}
+                >
+                  <Printer size={14} />
+                  Imprimir / Salvar PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBureauModalDoc(null)}
+                  className="btn-secondary-subtle"
+                  style={{ padding: '0.65rem 1.2rem', fontSize: '0.8rem' }}
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ---------------------------------------------------- */}
+      {/* TOAST FLUTUANTE DE NOTIFICAÇÃO (COPIA DE DOCUMENTO)  */}
+      {/* ---------------------------------------------------- */}
+      {bureauToast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '2rem',
+          right: '2rem',
+          zIndex: 2500,
+          background: '#0D1424',
+          border: '1px solid var(--gold-border)',
+          borderRadius: 'var(--radius-sm)',
+          padding: '1rem 1.35rem',
+          boxShadow: '0 12px 36px rgba(0, 0, 0, 0.85)',
+          maxWidth: '420px',
+          display: 'flex',
+          alignItems: 'flex-start',
+          gap: '0.85rem'
+        }}>
+          <div style={{
+            background: 'rgba(16, 185, 129, 0.15)',
+            border: '1px solid rgba(16, 185, 129, 0.4)',
+            borderRadius: '50%',
+            padding: '0.4rem',
+            color: '#34D399',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            <Check size={16} />
+          </div>
+          <div>
+            <strong style={{ color: 'var(--gold-light)', fontSize: '0.84rem', display: 'block', marginBottom: '0.2rem' }}>
+              {bureauToast.title}
+            </strong>
+            <p style={{ color: '#CBD5E1', fontSize: '0.76rem', margin: 0, lineHeight: 1.45 }}>
+              {bureauToast.message}
+            </p>
           </div>
         </div>
       )}

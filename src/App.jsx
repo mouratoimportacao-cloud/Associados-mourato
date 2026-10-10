@@ -14,6 +14,17 @@ import { ArrowUpRight } from 'lucide-react';
 export function App() {
   const [isContactOpen, setIsContactOpen] = useState(false);
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [clientModalInitialView, setClientModalInitialView] = useState('leads');
+
+  const handleOpenLogin = () => {
+    setClientModalInitialView('leads');
+    setIsClientModalOpen(true);
+  };
+
+  const handleOpenBiro = () => {
+    setClientModalInitialView('bureau_scores');
+    setIsClientModalOpen(true);
+  };
 
   const handleNavigate = (sectionId) => {
     const el = document.getElementById(sectionId);
@@ -31,7 +42,8 @@ export function App() {
       <Header 
         onNavigate={handleNavigate}
         onOpenContact={() => setIsContactOpen(true)}
-        onOpenLogin={() => setIsClientModalOpen(true)}
+        onOpenLogin={handleOpenLogin}
+        onOpenBiro={handleOpenBiro}
       />
 
       <main style={{ flex: 1 }}>
@@ -114,6 +126,7 @@ export function App() {
       <ClientManagementModal 
         isOpen={isClientModalOpen}
         onClose={() => setIsClientModalOpen(false)}
+        initialView={clientModalInitialView}
       />
 
     </div>

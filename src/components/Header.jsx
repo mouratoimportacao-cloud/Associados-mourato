@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowUpRight, Menu, X } from 'lucide-react';
+import { ArrowUpRight, Menu, X, ShieldCheck } from 'lucide-react';
 
 const NAV_ITEMS = [
   { label: 'O Espectro',               id: 'espectro'   },
@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { label: 'Governança & Sigilo',       id: 'governanca' },
 ];
 
-export const Header = ({ onNavigate, onOpenContact, onOpenLogin }) => {
+export const Header = ({ onNavigate, onOpenContact, onOpenLogin, onOpenBiro }) => {
   const [scrolled,   setScrolled]   = useState(false);
   const [activeId,   setActiveId]   = useState('');
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -77,6 +77,15 @@ export const Header = ({ onNavigate, onOpenContact, onOpenLogin }) => {
           </nav>
 
           <div className="header-actions">
+            <button 
+              className="btn-secondary-subtle btn-sm" 
+              onClick={onOpenBiro}
+              title="Birôs de Crédito & Scores Oficiais (Serasa, Boa Vista, Quod, Bacen SCR)"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+            >
+              <ShieldCheck size={13} color="var(--gold-primary)" />
+              Birôs de Crédito
+            </button>
             <button className="btn-secondary-subtle btn-sm" onClick={onOpenLogin}>
               Login
             </button>
@@ -116,6 +125,14 @@ export const Header = ({ onNavigate, onOpenContact, onOpenLogin }) => {
               </button>
             ))}
             <div className="mobile-drawer-actions">
+              <button 
+                className="btn-secondary-subtle" 
+                onClick={() => { (onOpenBiro || onOpenLogin)(); setMobileOpen(false); }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+              >
+                <ShieldCheck size={14} color="var(--gold-primary)" />
+                Birôs de Crédito (PF & PJ)
+              </button>
               <button className="btn-secondary-subtle" onClick={() => { onOpenLogin(); setMobileOpen(false); }}>
                 Login
               </button>
