@@ -85,7 +85,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
     setLeadsLoading(true);
     try {
       const res = await fetch(`${import.meta.env.VITE_API_URL}/leads`, {
-        headers: { 'x-admin-password': import.meta.env.VITE_ADMIN_PASSWORD || '' }
+        headers: { 'x-admin-password': import.meta.env.VITE_ADMIN_PASSWORD || '@Jota1307' }
       });
       const contentType = res.headers.get('content-type') || '';
       if (res.ok && contentType.includes('application/json')) {
@@ -102,7 +102,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
     if (!window.confirm('Remover este lead?')) return;
     await fetch(`${import.meta.env.VITE_API_URL}/leads/${id}`, {
       method: 'DELETE',
-      headers: { 'x-admin-password': import.meta.env.VITE_ADMIN_PASSWORD }
+      headers: { 'x-admin-password': import.meta.env.VITE_ADMIN_PASSWORD || '@Jota1307' }
     });
     setLeads(leads.filter(l => l.id !== id));
   };
@@ -110,7 +110,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
   const handleApproveLead = async (id) => {
     await fetch(`${import.meta.env.VITE_API_URL}/leads/${id}`, {
       method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'x-admin-password': import.meta.env.VITE_ADMIN_PASSWORD },
+      headers: { 'Content-Type': 'application/json', 'x-admin-password': import.meta.env.VITE_ADMIN_PASSWORD || '@Jota1307' },
       body: JSON.stringify({ status: 'aprovado' })
     });
     setLeads(leads.map(l => l.id === id ? { ...l, status: 'aprovado' } : l));
@@ -358,9 +358,17 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
       quodStatus: client.quodStatus || 'Positivo / Sem Restrição',
       quodScore: client.quodScore || '682',
       bacenScr: client.bacenScr || 'Rating A1',
+      senhaSerasa: client.senhaSerasa || '',
+      senhaBacen: client.senhaBacen || '',
+      senhaGovBr: client.senhaGovBr || '',
+      senhaQuod: client.senhaQuod || '',
+      senhaBoaVista: client.senhaBoaVista || '',
+      senhaMestraConsultas: client.senhaMestraConsultas || '',
+      pinCertificadoA1: client.pinCertificadoA1 || '',
       limiteAprovado: client.limiteAprovado || '',
       observacoesSigilosas: client.observacoesSigilosas || ''
     });
+    setShowFormPasswords({});
     setSelectedClient(null);
     setActiveView('clients_new');
   };
@@ -496,6 +504,13 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
     quodStatus: 'Positivo / Sem Restrição',
     quodScore: '890',
     bacenScr: 'Rating A1 (Prime Rate)',
+    senhaSerasa: '',
+    senhaBacen: '',
+    senhaGovBr: '',
+    senhaQuod: '',
+    senhaBoaVista: '',
+    senhaMestraConsultas: '',
+    pinCertificadoA1: '',
     limiteAprovado: '',
     observacoesSigilosas: ''
   });
@@ -581,16 +596,16 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
 
   if (!isOpen) return null;
 
-  // Login Handler
+  // Login Handler (Acesso Exclusivo Mourato)
   const handleLogin = (e) => {
     e.preventDefault();
-    const senhaCorreta = import.meta.env.VITE_ADMIN_PASSWORD || 'mourato2026';
-    if ((authForm.user.trim() === 'admin' || authForm.user.trim() === 'mourato') && 
-        (authForm.password === senhaCorreta || authForm.password === 'admin' || authForm.password === 'mourato2026')) {
+    const userInput = authForm.user.trim().toLowerCase();
+    const passInput = authForm.password;
+    if (userInput === 'mourato' && passInput === '@Jota1307') {
       setIsAuthenticated(true);
       setAuthError('');
     } else {
-      setAuthError('Usuário ou senha incorretos. (Dica local: use usuário "admin" e senha "admin" ou "mourato2026")');
+      setAuthError('Credenciais inválidas. Usuário ou senha incorretos.');
     }
   };
 
@@ -733,6 +748,13 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
       quodStatus: 'Positivo / Sem Restrição',
       quodScore: '',
       bacenScr: 'Rating A1',
+      senhaSerasa: '',
+      senhaBacen: '',
+      senhaGovBr: '',
+      senhaQuod: '',
+      senhaBoaVista: '',
+      senhaMestraConsultas: '',
+      pinCertificadoA1: '',
       limiteAprovado: '',
       observacoesSigilosas: ''
     });
@@ -1154,7 +1176,7 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                 type="text" 
                 value={authForm.user}
                 onChange={(e) => setAuthForm({ ...authForm, user: e.target.value })}
-                placeholder="Ex: admin"
+                placeholder="mourato"
                 autoFocus
                 style={{
                   width: '100%',
@@ -3124,25 +3146,10 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                       
                       {/* Serasa */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Serasa Experian {newClient.tipo === 'PJ' ? 'PJ' : 'PF'}
+                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Serasa Experian {newClient.tipo === 'PJ' ? 'PJ' : 'PF'}</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--gold-light)', letterSpacing: '0.04em' }}>CONSULTA</span>
                         </div>
-                        <input
-                          type="text"
-                          value={newClient.serasaScore}
-                          onChange={(e) => setNewClient({ ...newClient, serasaScore: e.target.value })}
-                          placeholder="Score ou Situação"
-                          style={{
-                            width: '100%',
-                            padding: '0.6rem',
-                            background: '#06090F',
-                            border: '1px solid rgba(255, 255, 255, 0.1)',
-                            borderRadius: 'var(--radius-xs)',
-                            color: '#FFFFFF',
-                            fontSize: '0.78rem',
-                            marginBottom: '0.4rem'
-                          }}
-                        />
                         <select
                           value={newClient.serasaStatus}
                           onChange={(e) => setNewClient({ ...newClient, serasaStatus: e.target.value })}
@@ -3153,7 +3160,8 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: 'var(--radius-xs)',
                             color: '#FFFFFF',
-                            fontSize: '0.78rem'
+                            fontSize: '0.78rem',
+                            marginBottom: '0.45rem'
                           }}
                         >
                           <option value="Sem Apontamentos">Sem Apontamentos (Limpo)</option>
@@ -3161,12 +3169,50 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                           <option value="Restrição Ativa">Restrição Ativa</option>
                           <option value="Em Limpeza / Saneamento">Em Limpeza / Saneamento</option>
                         </select>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showFormPasswords.serasa ? 'text' : 'password'}
+                            value={newClient.senhaSerasa || ''}
+                            onChange={(e) => setNewClient({ ...newClient, senhaSerasa: e.target.value })}
+                            placeholder="🔑 Senha Consulta Serasa"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 2rem 0.55rem 0.6rem',
+                              background: '#06090F',
+                              border: '1px solid rgba(197, 168, 105, 0.25)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFormPasswords(p => ({ ...p, serasa: !p.serasa }))}
+                            style={{
+                              position: 'absolute',
+                              right: '6px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title={showFormPasswords.serasa ? 'Ocultar senha' : 'Ver senha'}
+                          >
+                            {showFormPasswords.serasa ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Bacen SCR */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Banco Central - SCR Registrato
+                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Banco Central - SCR Registrato</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--gold-light)', letterSpacing: '0.04em' }}>CONSULTA</span>
                         </div>
                         <select
                           value={newClient.bacenScr}
@@ -3178,7 +3224,8 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: 'var(--radius-xs)',
                             color: '#FFFFFF',
-                            fontSize: '0.78rem'
+                            fontSize: '0.78rem',
+                            marginBottom: '0.45rem'
                           }}
                         >
                           <option value="Rating A1 (Prime Rate Corporativo)">Rating A1 (Prime Rate / Sem Prejuízos)</option>
@@ -3187,12 +3234,50 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                           <option value="Rating C / D (Em Monitoramento)">Rating C / D (Em Monitoramento)</option>
                           <option value="Rating D / E (Em Recuperação)">Rating D / E (Em Recuperação)</option>
                         </select>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showFormPasswords.bacen ? 'text' : 'password'}
+                            value={newClient.senhaBacen || ''}
+                            onChange={(e) => setNewClient({ ...newClient, senhaBacen: e.target.value })}
+                            placeholder="🔑 Senha / Código Sisbacen"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 2rem 0.55rem 0.6rem',
+                              background: '#06090F',
+                              border: '1px solid rgba(197, 168, 105, 0.25)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFormPasswords(p => ({ ...p, bacen: !p.bacen }))}
+                            style={{
+                              position: 'absolute',
+                              right: '6px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title={showFormPasswords.bacen ? 'Ocultar senha' : 'Ver senha'}
+                          >
+                            {showFormPasswords.bacen ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Gov.br */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Gov.br / Certificação
+                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Gov.br / Certificação</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--gold-light)', letterSpacing: '0.04em' }}>CONSULTA</span>
                         </div>
                         <select
                           value={newClient.govNivel}
@@ -3224,15 +3309,54 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: 'var(--radius-xs)',
                             color: '#FFFFFF',
-                            fontSize: '0.75rem'
+                            fontSize: '0.75rem',
+                            marginBottom: '0.45rem'
                           }}
                         />
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showFormPasswords.gov ? 'text' : 'password'}
+                            value={newClient.senhaGovBr || ''}
+                            onChange={(e) => setNewClient({ ...newClient, senhaGovBr: e.target.value })}
+                            placeholder="🔑 Senha Gov.br / PIN Certificado"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 2rem 0.55rem 0.6rem',
+                              background: '#06090F',
+                              border: '1px solid rgba(197, 168, 105, 0.25)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFormPasswords(p => ({ ...p, gov: !p.gov }))}
+                            style={{
+                              position: 'absolute',
+                              right: '6px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title={showFormPasswords.gov ? 'Ocultar senha' : 'Ver senha'}
+                          >
+                            {showFormPasswords.gov ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Quod */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Quod Empresas / Consumidor
+                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Quod Empresas / Consumidor</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--gold-light)', letterSpacing: '0.04em' }}>CONSULTA</span>
                         </div>
                         <select
                           value={newClient.quodStatus}
@@ -3244,19 +3368,58 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: 'var(--radius-xs)',
                             color: '#FFFFFF',
-                            fontSize: '0.78rem'
+                            fontSize: '0.78rem',
+                            marginBottom: '0.45rem'
                           }}
                         >
                           <option value="Positivo / Sem Restrição">Positivo / Sem Restrição</option>
                           <option value="Em Análise">Em Análise</option>
                           <option value="Com Apontamento">Com Apontamento</option>
                         </select>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showFormPasswords.quod ? 'text' : 'password'}
+                            value={newClient.senhaQuod || ''}
+                            onChange={(e) => setNewClient({ ...newClient, senhaQuod: e.target.value })}
+                            placeholder="🔑 Senha Consulta Quod"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 2rem 0.55rem 0.6rem',
+                              background: '#06090F',
+                              border: '1px solid rgba(197, 168, 105, 0.25)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFormPasswords(p => ({ ...p, quod: !p.quod }))}
+                            style={{
+                              position: 'absolute',
+                              right: '6px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title={showFormPasswords.quod ? 'Ocultar senha' : 'Ver senha'}
+                          >
+                            {showFormPasswords.quod ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
                       </div>
 
                       {/* Boa Vista */}
                       <div style={{ background: '#070A10', padding: '1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem' }}>
-                          Boa Vista SCPC
+                        <div style={{ fontSize: '0.78rem', color: '#FFFFFF', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>Boa Vista SCPC</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--gold-light)', letterSpacing: '0.04em' }}>CONSULTA</span>
                         </div>
                         <select
                           value={newClient.boaVistaStatus}
@@ -3268,13 +3431,113 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                             border: '1px solid rgba(255, 255, 255, 0.1)',
                             borderRadius: 'var(--radius-xs)',
                             color: '#FFFFFF',
-                            fontSize: '0.78rem'
+                            fontSize: '0.78rem',
+                            marginBottom: '0.45rem'
                           }}
                         >
                           <option value="Sem Restrições">Sem Restrições (Faixa A)</option>
                           <option value="Score Regular">Score Regular</option>
                           <option value="Pendência Comercial">Pendência Comercial</option>
                         </select>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showFormPasswords.boavista ? 'text' : 'password'}
+                            value={newClient.senhaBoaVista || ''}
+                            onChange={(e) => setNewClient({ ...newClient, senhaBoaVista: e.target.value })}
+                            placeholder="🔑 Senha Boa Vista SCPC"
+                            style={{
+                              width: '100%',
+                              padding: '0.55rem 2rem 0.55rem 0.6rem',
+                              background: '#06090F',
+                              border: '1px solid rgba(197, 168, 105, 0.25)',
+                              borderRadius: 'var(--radius-xs)',
+                              color: '#FFFFFF',
+                              fontSize: '0.75rem'
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFormPasswords(p => ({ ...p, boavista: !p.boavista }))}
+                            style={{
+                              position: 'absolute',
+                              right: '6px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'none',
+                              border: 'none',
+                              color: '#94A3B8',
+                              cursor: 'pointer',
+                              padding: '2px',
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}
+                            title={showFormPasswords.boavista ? 'Ocultar senha' : 'Ver senha'}
+                          >
+                            {showFormPasswords.boavista ? <EyeOff size={13} /> : <Eye size={13} />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Chaves Mestras & Acessos de Consulta Pericial Complementares */}
+                    <div style={{
+                      marginTop: '1rem',
+                      padding: '0.85rem 1.15rem',
+                      background: 'rgba(197, 168, 105, 0.04)',
+                      border: '1px dashed rgba(197, 168, 105, 0.3)',
+                      borderRadius: 'var(--radius-sm)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.6rem'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--gold-light)', fontSize: '0.78rem', fontWeight: 700 }}>
+                        <KeyRound size={14} color="var(--gold-primary)" />
+                        CHAVES &amp; SENHAS COMPLEMENTARES PARA CONSULTAS PERICIAIS
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.85rem' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
+                            Senha Mestra / Procuração Eletrônica (e-CAC / Receita Federal)
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type={showFormPasswords.master ? 'text' : 'password'}
+                              value={newClient.senhaMestraConsultas || ''}
+                              onChange={(e) => setNewClient({ ...newClient, senhaMestraConsultas: e.target.value })}
+                              placeholder="Senha Código e-CAC / RFB"
+                              style={{ width: '100%', padding: '0.55rem 2rem 0.55rem 0.6rem', background: '#06090F', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-xs)', color: '#FFF', fontSize: '0.75rem' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowFormPasswords(p => ({ ...p, master: !p.master }))}
+                              style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                            >
+                              {showFormPasswords.master ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.72rem', color: '#94A3B8', marginBottom: '0.25rem' }}>
+                            PIN / Senha do Certificado Digital A1
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type={showFormPasswords.pinA1 ? 'text' : 'password'}
+                              value={newClient.pinCertificadoA1 || ''}
+                              onChange={(e) => setNewClient({ ...newClient, pinCertificadoA1: e.target.value })}
+                              placeholder="PIN / Senha Certificado Digital"
+                              style={{ width: '100%', padding: '0.55rem 2rem 0.55rem 0.6rem', background: '#06090F', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 'var(--radius-xs)', color: '#FFF', fontSize: '0.75rem' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowFormPasswords(p => ({ ...p, pinA1: !p.pinA1 }))}
+                              style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                            >
+                              {showFormPasswords.pinA1 ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -5864,6 +6127,78 @@ export const ClientManagementModal = ({ isOpen, onClose, initialView = 'leads' }
                   <span style={{ color: '#64748B', display: 'block', fontSize: '0.68rem' }}>BOA VISTA</span>
                   <strong style={{ color: '#FFFFFF' }}>{selectedClient.boaVistaStatus || 'Sem Restrições'}</strong>
                 </div>
+              </div>
+            </div>
+
+            {/* Senhas & Credenciais de Consulta dos Birôs */}
+            <div style={{ marginBottom: '1.5rem', background: '#070A10', padding: '1.1rem', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(197, 168, 105, 0.25)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem' }}>
+                <h3 style={{ fontSize: '0.84rem', color: 'var(--gold-light)', textTransform: 'uppercase', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <KeyRound size={14} color="var(--gold-primary)" />
+                  Senhas &amp; Credenciais de Consulta dos Birôs
+                </h3>
+                <span style={{ fontSize: '0.7rem', color: '#64748B' }}>Acesso Operacional Sigiloso</span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem', fontSize: '0.78rem' }}>
+                {[
+                  { label: 'SERASA EXPERIAN', val: selectedClient.senhaSerasa, key: 'serasa' },
+                  { label: 'BACEN / SCR', val: selectedClient.senhaBacen, key: 'bacen' },
+                  { label: 'GOV.BR / PIN', val: selectedClient.senhaGovBr, key: 'gov' },
+                  { label: 'QUOD', val: selectedClient.senhaQuod, key: 'quod' },
+                  { label: 'BOA VISTA', val: selectedClient.senhaBoaVista, key: 'boavista' },
+                  { label: 'CHAVE MESTRA / E-CAC', val: selectedClient.senhaMestraConsultas, key: 'master' },
+                  { label: 'PIN CERTIFICADO A1', val: selectedClient.pinCertificadoA1, key: 'pinA1' }
+                ].filter(item => item.val).length === 0 ? (
+                  <div style={{ color: '#64748B', fontSize: '0.76rem', fontStyle: 'italic', gridColumn: '1 / -1' }}>
+                    Nenhuma senha de consulta específica registrada para este cliente. Clique em "Editar Cadastro" para cadastrar.
+                  </div>
+                ) : (
+                  [
+                    { label: 'SERASA EXPERIAN', val: selectedClient.senhaSerasa, key: 'serasa' },
+                    { label: 'BACEN / SCR', val: selectedClient.senhaBacen, key: 'bacen' },
+                    { label: 'GOV.BR / PIN', val: selectedClient.senhaGovBr, key: 'gov' },
+                    { label: 'QUOD', val: selectedClient.senhaQuod, key: 'quod' },
+                    { label: 'BOA VISTA', val: selectedClient.senhaBoaVista, key: 'boavista' },
+                    { label: 'CHAVE MESTRA / E-CAC', val: selectedClient.senhaMestraConsultas, key: 'master' },
+                    { label: 'PIN CERTIFICADO A1', val: selectedClient.pinCertificadoA1, key: 'pinA1' }
+                  ].filter(item => item.val).map((item, idx) => {
+                    const isVisible = showDetailPasswords[`bureau-${selectedClient.id}-${item.key}`];
+                    return (
+                      <div key={idx} style={{ background: '#0D121D', padding: '0.65rem 0.8rem', borderRadius: 'var(--radius-xs)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <span style={{ color: '#94A3B8', display: 'block', fontSize: '0.66rem', fontWeight: 600 }}>{item.label}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem', marginTop: '3px' }}>
+                          <span style={{ fontFamily: isVisible ? 'inherit' : 'monospace', color: 'var(--gold-light)', fontWeight: 600, fontSize: '0.8rem' }}>
+                            {isVisible ? item.val : '••••••••'}
+                          </span>
+                          <div style={{ display: 'flex', gap: '2px' }}>
+                            <button
+                              type="button"
+                              onClick={() => setShowDetailPasswords(prev => ({ ...prev, [`bureau-${selectedClient.id}-${item.key}`]: !isVisible }))}
+                              style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                              title={isVisible ? 'Ocultar' : 'Exibir senha'}
+                            >
+                              {isVisible ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (navigator.clipboard && navigator.clipboard.writeText) {
+                                  navigator.clipboard.writeText(item.val);
+                                  showToast('📋 Senha Copiada!', `Senha de ${item.label} copiada para a área de transferência.`);
+                                }
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
+                              title="Copiar senha"
+                            >
+                              <Copy size={13} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 

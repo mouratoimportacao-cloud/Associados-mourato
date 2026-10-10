@@ -70,6 +70,13 @@ export const TEIA_INITIAL_CLIENTS = [
     "bacenScr": "Rating A1 (Prime Rate Corporativo - R$ 0,00 Vencidos/Prejuízos)",
     "govNivel": "Ouro",
     "govProtocolo": "e-CNPJ SyngularID A1 Ativo",
+    "senhaSerasa": "Mourato@2026",
+    "senhaBacen": "Bacen#Mourato92",
+    "senhaGovBr": "GovBr$2026Mourato",
+    "senhaQuod": "Quod#Corp2026",
+    "senhaBoaVista": "BoaVista@Mourato",
+    "senhaMestraConsultas": "eCAC*Mourato2026",
+    "pinCertificadoA1": "9876",
     "limiteAprovado": "R$ 1.450.000,00 (Potencial Pronampe/FGO)",
     "observacoesSigilosas": "Empresa homologada com Rating A1 no Registrato PJ Bacen. Balanço Patrimonial estruturado pelo CRC Nilson Oliveira. Certificados e CND Federal e Previdenciária 100% negativas.",
     "dataCadastro": "2026-09-08"
